@@ -4,6 +4,7 @@ namespace DeltaWhyDev\AuditLog\NovaComponents\ChangelogField;
 
 use DeltaWhyDev\AuditLog\Enums\AuditAction;
 use DeltaWhyDev\AuditLog\Models\AuditLog;
+use DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver;
 use Laravel\Nova\Fields\Field;
 
 class ChangelogField extends Field
@@ -219,11 +220,11 @@ class ChangelogField extends Field
         }
 
         $summaryText = implode(' | ', $parts);
-        
+
         if (mb_strlen($summaryText) > 30) {
             return mb_substr($summaryText, 0, 27) . '...';
         }
-        
+
         return $summaryText;
     }
 
@@ -232,7 +233,7 @@ class ChangelogField extends Field
      */
     protected function getActorName(AuditLog $log): string
     {
-        return \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getActorDisplayName($log->actor_type, $log->actor_id);
+        return ResourceResolver::getActorDisplayName($log->actor_type, $log->actor_id);
     }
 
     /**
@@ -240,7 +241,7 @@ class ChangelogField extends Field
      */
     protected function getActorUri(AuditLog $log): ?string
     {
-        $userModel = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getUserModel();
+        $userModel = ResourceResolver::getUserModel();
 
         if (($log->actor_type === 'user' || $log->actor_type === $userModel) && $log->actor_id) {
             return $this->getNovaResourceUri($userModel, $log->actor_id);
@@ -254,7 +255,7 @@ class ChangelogField extends Field
      */
     protected function getNovaResourceUri(string $entityType, string|int $entityId): ?string
     {
-        return \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getNovaResourceUri($entityType, $entityId);
+        return ResourceResolver::getNovaResourceUri($entityType, $entityId);
     }
 
     /**
@@ -271,23 +272,23 @@ class ChangelogField extends Field
 
             $old = $change['old'] ?? null;
             $new = $change['new'] ?? null;
-            
+
             // Check for transformer
             $transformer = $this->getTransformer($this->entityType, $field);
-            
+
             if ($transformer) {
                  $diff = $transformer->transformDiff($old, $new);
-                 
+
                  if (is_array($diff)) {
                      // Handle flattened diffs
                      foreach ($diff as $changeItem) {
                          $oldItem = $changeItem['old'] ?? 'null';
                          $newItem = $changeItem['new'] ?? 'null';
-                         
+
                          if ($oldItem === $newItem) {
                              continue;
                          }
-                         
+
                          $formatted[] = [
                             'field' => $field, // Keep original field for reference
                             'label' => $changeItem['label'],
@@ -298,7 +299,7 @@ class ChangelogField extends Field
                      }
                      continue;
                  }
-                 
+
                  $oldVal = $transformer->transform($old, 'old');
                  $newVal = $transformer->transform($new, 'new');
             } else {
@@ -332,18 +333,28 @@ class ChangelogField extends Field
         $formatted = [];
 
         foreach ($relations as $relation => $changes) {
-            $modelClass = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::guessRelatedModelClass($relation);
-            
+            $modelClass = ResourceResolver::guessRelatedModelClass($relation);
+
             $formatItem = function ($item) use ($modelClass) {
                 // $item could be string/int, or array ['id' => 1, 'name' => 'foo']
                 $id = is_array($item) ? ($item['id'] ?? null) : $item;
-                $name = is_array($item) ? ($item['name'] ?? $id) : $item;
+                $loggedName = is_array($item) ? ($item['name'] ?? $id) : $item;
+
+                $name = $loggedName;
                 $url = null;
-                
+
                 if ($modelClass && $id) {
-                    $url = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getNovaResourceUri($modelClass, $id);
+                    $url = ResourceResolver::getNovaResourceUri($modelClass, $id);
+
+                    // Prioritize actual live DB data over statically logged names if it exists
+                    $liveName = ResourceResolver::getEntityDisplayName($modelClass, $id);
+                    if ($liveName !== "#{$id}" && !str_contains($liveName, '(deleted)')) {
+                        $name = $liveName;
+                    } elseif (str_contains($liveName, '(deleted)')) {
+                         $name = $loggedName . ' (deleted)';
+                    }
                 }
-                
+
                 return [
                     'id' => $id,
                     'name' => (string) $name,
@@ -415,7 +426,7 @@ class ChangelogField extends Field
         }
 
         $transformers = config('audit-log.transformers', []);
-        
+
         // Check for exact class match
         $modelTransformers = $transformers[$entityType] ?? [];
         $transformerClass = $modelTransformers[$field] ?? null;
