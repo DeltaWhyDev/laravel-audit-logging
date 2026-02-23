@@ -307,6 +307,8 @@ class ChangelogField extends Field
                             'label' => $changeItem['label'],
                             'old' => $oldItem,
                             'new' => $newItem,
+                            'old_is_empty' => is_null($changeItem['old'] ?? null) || $oldItem === 'null' || (is_string($oldItem) && str_contains($oldItem, 'text-gray-500 italic">None</span>')),
+                            'new_is_empty' => is_null($changeItem['new'] ?? null) || $newItem === 'null' || (is_string($newItem) && str_contains($newItem, 'text-gray-500 italic">None</span>')),
                             'is_diff_row' => true,
                         ];
                     }
@@ -361,8 +363,8 @@ class ChangelogField extends Field
                 'label' => $label,
                 'old' => $oldVal,
                 'new' => $newVal,
-                'old_is_empty' => is_null($old) || $old === 'null' || (is_string($oldVal) && str_contains($oldVal, 'text-gray-500 italic">None</span>')),
-                'new_is_empty' => is_null($new) || $new === 'null' || (is_string($newVal) && str_contains($newVal, 'text-gray-500 italic">None</span>')),
+                'old_is_empty' => is_null($old) || is_null($oldVal) || $oldVal === 'null' || (is_string($oldVal) && str_contains($oldVal, 'text-gray-500 italic">None</span>')) || $oldVal === '',
+                'new_is_empty' => is_null($new) || is_null($newVal) || $newVal === 'null' || (is_string($newVal) && str_contains($newVal, 'text-gray-500 italic">None</span>')) || $newVal === '',
                 'diff' => $diff, // Passed to frontend
             ];
         }

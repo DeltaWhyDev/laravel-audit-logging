@@ -76,7 +76,7 @@
                                             </svg>
                                         </div>
 
-                                        <span v-if="attr.new !== null && attr.new !== 'null'" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" v-html="attr.new"></span>
+                                        <span v-if="!attr.new_is_empty" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" v-html="attr.new"></span>
                                     </div>
                                 </template>
                                 <template v-else>
