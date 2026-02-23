@@ -314,10 +314,10 @@ class ChangelogField extends Field
                         $dummyModel = new $this->entityType;
 
                         $dummyModel->setAttribute($field, $old);
-                        $oldVal = $this->formatValue($dummyModel->getAttribute($field));
+                        $oldVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
 
                         $dummyModel->setAttribute($field, $new);
-                        $newVal = $this->formatValue($dummyModel->getAttribute($field));
+                        $newVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
 
                         $usedDummyModel = true;
                     } catch (\Throwable $e) {
@@ -326,8 +326,8 @@ class ChangelogField extends Field
                 }
 
                 if (! $usedDummyModel) {
-                    $oldVal = $this->formatValue($old);
-                    $newVal = $this->formatValue($new);
+                    $oldVal = $this->formatValue($old, $field);
+                    $newVal = $this->formatValue($new, $field);
                 }
             }
 
@@ -412,7 +412,7 @@ class ChangelogField extends Field
     /**
      * Format value for display
      */
-    protected function formatValue($value): string
+    protected function formatValue($value, ?string $fieldName = null, ?\Illuminate\Database\Eloquent\Model $model = null): string
     {
         if (is_null($value)) {
             return 'null';
@@ -420,6 +420,15 @@ class ChangelogField extends Field
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
         }
+
+        // Handle Enum logic natively via AuditLogger logic
+        if ($model && $fieldName && \DeltaWhyDev\AuditLog\Services\Audit\AuditLogger::isEnumField($fieldName, $model)) {
+            $formatted = \DeltaWhyDev\AuditLog\Services\Audit\AuditLogger::formatEnum($value, $fieldName, $model);
+            if (is_array($formatted) && isset($formatted['display'])) {
+                return (string) $formatted['display'];
+            }
+        }
+
         if (is_array($value)) {
             return json_encode($value, JSON_UNESCAPED_UNICODE);
         }
