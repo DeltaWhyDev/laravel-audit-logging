@@ -5,6 +5,7 @@ namespace DeltaWhyDev\AuditLog\NovaComponents\ChangelogField;
 use DeltaWhyDev\AuditLog\Enums\AuditAction;
 use DeltaWhyDev\AuditLog\Models\AuditLog;
 use DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver;
+use Illuminate\Support\Str;
 use Laravel\Nova\Fields\Field;
 
 class ChangelogField extends Field
@@ -475,7 +476,7 @@ class ChangelogField extends Field
         }
 
         $model = call_user_func([$modelClass, 'find'], $id);
-        
+
         $name = null;
         if ($model) {
             $displayField = $config['display_field'] ?? 'name';
@@ -489,7 +490,7 @@ class ChangelogField extends Field
         $resource = $config['resource'] ?? null;
         if ($resource) {
             $url = '/nova/resources/'.$resource.'/'.$id;
-            
+
             return sprintf('<a href="%s" class="link-default font-semibold text-primary-500 hover:text-primary-600">%s</a>', e($url), e($name));
         }
 
@@ -563,7 +564,7 @@ class ChangelogField extends Field
             }
 
             // Fall back to short class name if no specific name field found
-            return class_basename($entityType);
+            return Str::headline(class_basename($entityType));
         } catch (\Throwable $e) {
             return ''; // Return empty string instead of ID to avoid "#123" if lookup fails
         }

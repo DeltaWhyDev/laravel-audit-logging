@@ -4,6 +4,8 @@ namespace DeltaWhyDev\AuditLog\Nova;
 
 use DeltaWhyDev\AuditLog\Enums\AuditAction;
 use DeltaWhyDev\AuditLog\Models\AuditLog as AuditLogModel;
+use DeltaWhyDev\AuditLog\NovaComponents\ChangelogField\ChangelogField;
+use DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver;
 use Illuminate\Support\Str;
 use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\ID;
@@ -12,7 +14,6 @@ use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource;
-use DeltaWhyDev\AuditLog\NovaComponents\ChangelogField\ChangelogField;
 
 class AuditLog extends Resource
 {
@@ -79,20 +80,20 @@ class AuditLog extends Resource
                 ->sortable(),
 
             Text::make('Summary', function () {
-                $actorName = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getActorDisplayName($this->actor_type, $this->actor_id);
+                $actorName = ResourceResolver::getActorDisplayName($this->actor_type, $this->actor_id);
                 $actorHtml = $actorName;
                 if ($this->actor_type === 'user' && $this->actor_id) {
-                    $userModel = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getUserModel();
+                    $userModel = ResourceResolver::getUserModel();
                     $actorUri = $this->getNovaResourceUri($userModel, $this->actor_id);
                     if ($actorUri) {
                         $actorHtml = sprintf('<a href="%s" class="link-default font-bold">%s</a>', $actorUri, e($actorName));
                     }
                 }
 
-                $entityName = class_basename($this->entity_type);
+                $entityName = Str::headline(class_basename($this->entity_type));
                 $entityDisplayName = $this->getEntityDisplayName($this->entity_type, $this->entity_id);
                 $entityHtml = sprintf('%s: %s', $entityName, e($entityDisplayName));
-                
+
                 $entityUri = $this->getNovaResourceUri($this->entity_type, $this->entity_id);
                 if ($entityUri) {
                     $entityHtml = sprintf('<a href="%s" class="link-default font-bold">%s</a>', $entityUri, $entityHtml);
@@ -102,7 +103,7 @@ class AuditLog extends Resource
                 $action = $this->action;
                 $label = $action instanceof AuditAction ? $action->label() : 'Unknown';
                 $actionValue = $action instanceof AuditAction ? $action->value : (int) $action;
-                
+
                 $actionHtml = sprintf(
                     '<span class="mx-1 text-gray-500 font-medium">%s</span>',
                     strtolower($label)
@@ -114,19 +115,19 @@ class AuditLog extends Resource
                 ->onlyOnIndex(),
 
             Text::make('Modified Fields', function () {
-                if ($this->action->value !== \DeltaWhyDev\AuditLog\Enums\AuditAction::UPDATED->value) {
+                if ($this->action->value !== AuditAction::UPDATED->value) {
                     return '—';
                 }
 
                 $labels = config('audit-log.field_labels', []);
                 $changedFields = [];
-                
-                if (!empty($this->attributes)) {
+
+                if (! empty($this->attributes)) {
                     foreach (array_keys($this->attributes) as $key) {
                         $changedFields[] = $labels[$key] ?? ucwords(str_replace('_', ' ', $key));
                     }
                 }
-                if (!empty($this->relations)) {
+                if (! empty($this->relations)) {
                     foreach (array_keys($this->relations) as $key) {
                         $changedFields[] = $labels[$key] ?? ucwords(str_replace('_', ' ', $key));
                     }
@@ -138,8 +139,9 @@ class AuditLog extends Resource
 
                 $text = implode(', ', $changedFields);
                 if (strlen($text) > 50) {
-                    return substr($text, 0, 47) . '...';
+                    return substr($text, 0, 47).'...';
                 }
+
                 return $text;
             })
                 ->onlyOnIndex()
@@ -155,7 +157,7 @@ class AuditLog extends Resource
             // Changes Table - Replaced with ChangelogField
             ChangelogField::make('Details')
                 ->resolveUsing(function ($value, $resource) {
-                    return [(new ChangelogField())->formatLog($resource)];
+                    return [(new ChangelogField)->formatLog($resource)];
                 })
                 ->withoutPagination()
                 ->alwaysExpanded()
@@ -253,7 +255,7 @@ class AuditLog extends Resource
 
     protected function getActorDisplayName(): string
     {
-        return \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getActorDisplayName($this->actor_type, $this->actor_id);
+        return ResourceResolver::getActorDisplayName($this->actor_type, $this->actor_id);
     }
 
     /**
@@ -262,7 +264,7 @@ class AuditLog extends Resource
     protected function getActorUri(): ?string
     {
         if ($this->actor_type === 'user' && $this->actor_id) {
-            $userModel = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getUserModel();
+            $userModel = ResourceResolver::getUserModel();
 
             return $this->getNovaResourceUri($userModel, $this->actor_id);
         }
@@ -341,7 +343,7 @@ class AuditLog extends Resource
      */
     protected function getNovaResourceUri(string $entityType, int $entityId): ?string
     {
-        return \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getNovaResourceUri($entityType, $entityId);
+        return ResourceResolver::getNovaResourceUri($entityType, $entityId);
     }
 
     /**
@@ -349,7 +351,7 @@ class AuditLog extends Resource
      */
     protected function guessRelatedModelClass(string $relation): ?string
     {
-        return \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::guessRelatedModelClass($relation);
+        return ResourceResolver::guessRelatedModelClass($relation);
     }
 
     /**
@@ -357,7 +359,7 @@ class AuditLog extends Resource
      */
     protected function getEntityDisplayName(string $entityType, int $entityId): string
     {
-        return \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getEntityDisplayName($entityType, $entityId);
+        return ResourceResolver::getEntityDisplayName($entityType, $entityId);
     }
 
     /**
