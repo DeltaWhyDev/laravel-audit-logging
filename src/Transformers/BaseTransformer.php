@@ -11,7 +11,7 @@ interface BaseTransformer
      * @param string $type 'old' or 'new'
      * @return string HTML or text
      */
-    public function transform($value, string $type): string;
+    public function transform($value, string $type, array $context = []): string;
 
     /**
      * Transform the difference between old and new values.
@@ -21,7 +21,8 @@ interface BaseTransformer
      *
      * @param mixed $old
      * @param mixed $new
+     * @param array $context Additional context like log, model, and other attributes
      * @return array|string|null
      */
-    public function transformDiff($old, $new): array|string|null;
+    public function transformDiff($old, $new, array $context = []): array|string|null;
 }

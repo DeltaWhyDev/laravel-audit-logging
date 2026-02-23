@@ -265,6 +265,11 @@ class ChangelogField extends Field
     protected function formatAttributes(array $attributes): array
     {
         $formatted = [];
+        $context = [
+            'entity_type' => $this->entityType,
+            'entity_id' => $this->entityId,
+            'attributes' => $attributes,
+        ];
 
         foreach ($attributes as $field => $change) {
             $label = $this->fieldLabels[$field]
@@ -278,7 +283,7 @@ class ChangelogField extends Field
             $transformer = $this->getTransformer($this->entityType, $field);
 
             if ($transformer) {
-                $diff = $transformer->transformDiff($old, $new);
+                $diff = $transformer->transformDiff($old, $new, $context);
 
                 if (is_array($diff)) {
                     // Handle flattened diffs
@@ -302,8 +307,8 @@ class ChangelogField extends Field
                     continue;
                 }
 
-                $oldVal = $transformer->transform($old, 'old');
-                $newVal = $transformer->transform($new, 'new');
+                $oldVal = $transformer->transform($old, 'old', $context);
+                $newVal = $transformer->transform($new, 'new', $context);
             } else {
                 $diff = null;
 

@@ -4,7 +4,7 @@ namespace DeltaWhyDev\AuditLog\Transformers;
 
 class JsonDiffTransformer implements BaseTransformer
 {
-    public function transform($value, string $type): string
+    public function transform($value, string $type, array $context = []): string
     {
         if (is_null($value)) {
             return '<span class="text-gray-400 italic">null</span>';
@@ -26,7 +26,7 @@ class JsonDiffTransformer implements BaseTransformer
                '</pre>';
     }
 
-    public function transformDiff($old, $new): array|string|null
+    public function transformDiff($old, $new, array $context = []): array|string|null
     {
         $oldArray = $this->normalizeArray($old);
         $newArray = $this->normalizeArray($new);
