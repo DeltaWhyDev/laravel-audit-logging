@@ -129,6 +129,18 @@ You can define custom transformers to format specific field values difference:
 ],
 ```
 
+### Hidden Fields
+To completely hide specific attributes or relationships from the Changelog UI display, add them to the `hidden_fields` configuration array. This is especially useful for hiding technical fields like polymorphic `_type` identifiers.
+
+```php
+// config/audit-log.php
+'hidden_fields' => [
+    \App\Models\Event\AlertReport::class => [
+        'action_type', // Hides this attribute from the UI display entirely
+    ],
+],
+```
+
 ### Search Configuration
 By default, searching the Audit Log index is disabled to prevent performance issues on large datasets. Enable specific columns via config:
 

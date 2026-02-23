@@ -279,6 +279,7 @@ class ChangelogField extends Field
             }
 
             $label = $this->fieldLabels[$field]
+                ?? config("audit-log.relational_links.{$field}.label")
                 ?? config("audit-log.field_labels.{$field}", null)
                 ?? $this->formatFieldName($field);
 
@@ -317,28 +318,36 @@ class ChangelogField extends Field
                 $newVal = $transformer->transform($new, 'new', $context);
             } else {
                 $diff = null;
+                $linkConfig = config("audit-log.relational_links.{$field}");
 
-                // Try to use the underlying model's cast mechanism if class exists
-                $usedDummyModel = false;
-                if ($this->entityType && class_exists($this->entityType)) {
-                    try {
-                        $dummyModel = new $this->entityType;
+                if ($linkConfig && isset($linkConfig['model'])) {
+                    $oldVal = $this->formatRelationLink($old, $linkConfig);
+                    $newVal = $this->formatRelationLink($new, $linkConfig);
+                } else {
+                    // Try to use the underlying model's cast mechanism if class exists
+                    $usedDummyModel = false;
+                    if ($this->entityType && class_exists($this->entityType)) {
+                        try {
+                            $dummyModel = new $this->entityType;
 
-                        $dummyModel->setAttribute($field, $old);
-                        $oldVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
+                            $dummyModel->setAttribute($field, $old);
+                            $oldVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
 
-                        $dummyModel->setAttribute($field, $new);
-                        $newVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
+                            $dummyModel->setAttribute($field, $new);
+                            $newVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
 
-                        $usedDummyModel = true;
-                    } catch (\Throwable $e) {
-                        // Fallback mechanism if dummy model initialization fails
+                            $usedDummyModel = true;
+                        } catch (\Throwable $e) {
+                            // Fallback mechanism if dummy model initialization fails
+                        }
                     }
-                }
 
-                if (! $usedDummyModel) {
-                    $oldVal = $this->formatValue($old, $field);
-                    $newVal = $this->formatValue($new, $field);
+                    if (! isset($oldVal) && ! isset($newVal)) {
+                        if (! $usedDummyModel) {
+                            $oldVal = $this->formatValue($old, $field);
+                            $newVal = $this->formatValue($new, $field);
+                        }
+                    }
                 }
             }
 
@@ -445,6 +454,42 @@ class ChangelogField extends Field
         }
 
         return (string) $value;
+    }
+
+    /**
+     * Format relation as HTML link
+     */
+    protected function formatRelationLink($id, array $config): string
+    {
+        if (! $id) {
+            return '<span class="text-gray-500 italic">None</span>';
+        }
+
+        $modelClass = $config['model'] ?? null;
+        if (! $modelClass || ! class_exists($modelClass)) {
+            return e('#'.$id);
+        }
+
+        $model = call_user_func([$modelClass, 'find'], $id);
+        
+        $name = null;
+        if ($model) {
+            $displayField = $config['display_field'] ?? 'name';
+            $name = $model->{$displayField} ?? null;
+        }
+
+        if (! $name) {
+            $name = class_basename($modelClass).' #'.$id.($model ? '' : ' (deleted)');
+        }
+
+        $resource = $config['resource'] ?? null;
+        if ($resource) {
+            $url = '/nova/resources/'.$resource.'/'.$id;
+            
+            return sprintf('<a href="%s" class="link-default font-semibold text-primary-500 hover:text-primary-600">%s</a>', e($url), e($name));
+        }
+
+        return e($name);
     }
 
     /**
