@@ -69,8 +69,8 @@
                             <dd class="text-sm text-gray-900 dark:text-gray-100 sm:col-span-2 flex items-center flex-wrap gap-2">
                                 <template v-if="attr.is_diff_row">
                                     <div class="flex items-center flex-wrap gap-2 w-full">
-                                        <span v-if="attr.old !== null && attr.old !== 'null'" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 opacity-80" v-html="attr.old"></span>
-                                        <div v-if="attr.old !== null && attr.old !== 'null' && attr.new !== null && attr.new !== 'null'" class="text-gray-400">
+                                        <span v-if="!attr.old_is_empty" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 opacity-80" v-html="attr.old"></span>
+                                        <div v-if="!attr.old_is_empty && !attr.new_is_empty" class="text-gray-400">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
                                             </svg>
@@ -80,7 +80,7 @@
                                     </div>
                                 </template>
                                 <template v-else>
-                                    <template v-if="attr.old !== null && attr.old !== 'null'">
+                                    <template v-if="!attr.old_is_empty">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 opacity-80" v-html="attr.old"></span>
                                         <svg class="w-4 h-4 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>

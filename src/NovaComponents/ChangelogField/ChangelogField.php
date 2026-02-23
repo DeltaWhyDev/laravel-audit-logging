@@ -361,6 +361,8 @@ class ChangelogField extends Field
                 'label' => $label,
                 'old' => $oldVal,
                 'new' => $newVal,
+                'old_is_empty' => is_null($old) || $old === 'null' || (is_string($oldVal) && str_contains($oldVal, 'text-gray-500 italic">None</span>')),
+                'new_is_empty' => is_null($new) || $new === 'null' || (is_string($newVal) && str_contains($newVal, 'text-gray-500 italic">None</span>')),
                 'diff' => $diff, // Passed to frontend
             ];
         }
