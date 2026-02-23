@@ -100,6 +100,7 @@ class ChangelogField extends Field
         // This allows passing specific data (like a single log entry) instead of querying
         if ($this->resolveCallback) {
             parent::resolve($resource, $attribute);
+
             return;
         }
 
@@ -222,7 +223,7 @@ class ChangelogField extends Field
         $summaryText = implode(' | ', $parts);
 
         if (mb_strlen($summaryText) > 30) {
-            return mb_substr($summaryText, 0, 27) . '...';
+            return mb_substr($summaryText, 0, 27).'...';
         }
 
         return $summaryText;
@@ -277,35 +278,57 @@ class ChangelogField extends Field
             $transformer = $this->getTransformer($this->entityType, $field);
 
             if ($transformer) {
-                 $diff = $transformer->transformDiff($old, $new);
+                $diff = $transformer->transformDiff($old, $new);
 
-                 if (is_array($diff)) {
-                     // Handle flattened diffs
-                     foreach ($diff as $changeItem) {
-                         $oldItem = $changeItem['old'] ?? 'null';
-                         $newItem = $changeItem['new'] ?? 'null';
+                if (is_array($diff)) {
+                    // Handle flattened diffs
+                    foreach ($diff as $changeItem) {
+                        $oldItem = $changeItem['old'] ?? 'null';
+                        $newItem = $changeItem['new'] ?? 'null';
 
-                         if ($oldItem === $newItem) {
-                             continue;
-                         }
+                        if ($oldItem === $newItem) {
+                            continue;
+                        }
 
-                         $formatted[] = [
+                        $formatted[] = [
                             'field' => $field, // Keep original field for reference
                             'label' => $changeItem['label'],
                             'old' => $oldItem,
                             'new' => $newItem,
                             'is_diff_row' => true,
-                         ];
-                     }
-                     continue;
-                 }
+                        ];
+                    }
 
-                 $oldVal = $transformer->transform($old, 'old');
-                 $newVal = $transformer->transform($new, 'new');
+                    continue;
+                }
+
+                $oldVal = $transformer->transform($old, 'old');
+                $newVal = $transformer->transform($new, 'new');
             } else {
-                 $diff = null;
-                 $oldVal = $this->formatValue($old);
-                 $newVal = $this->formatValue($new);
+                $diff = null;
+
+                // Try to use the underlying model's cast mechanism if class exists
+                $usedDummyModel = false;
+                if ($this->entityType && class_exists($this->entityType)) {
+                    try {
+                        $dummyModel = new $this->entityType;
+
+                        $dummyModel->setAttribute($field, $old);
+                        $oldVal = $this->formatValue($dummyModel->getAttribute($field));
+
+                        $dummyModel->setAttribute($field, $new);
+                        $newVal = $this->formatValue($dummyModel->getAttribute($field));
+
+                        $usedDummyModel = true;
+                    } catch (\Throwable $e) {
+                        // Fallback mechanism if dummy model initialization fails
+                    }
+                }
+
+                if (! $usedDummyModel) {
+                    $oldVal = $this->formatValue($old);
+                    $newVal = $this->formatValue($new);
+                }
             }
 
             // Skip entries that resulted in the exact same rendered value (e.g. "All Allowed" -> "All Allowed")
@@ -348,10 +371,10 @@ class ChangelogField extends Field
 
                     // Prioritize actual live DB data over statically logged names if it exists
                     $liveName = ResourceResolver::getEntityDisplayName($modelClass, $id);
-                    if ($liveName !== "#{$id}" && !str_contains($liveName, '(deleted)')) {
+                    if ($liveName !== "#{$id}" && ! str_contains($liveName, '(deleted)')) {
                         $name = $liveName;
                     } elseif (str_contains($liveName, '(deleted)')) {
-                         $name = $loggedName . ' (deleted)';
+                        $name = $loggedName.' (deleted)';
                     }
                 }
 
@@ -416,6 +439,7 @@ class ChangelogField extends Field
             'alwaysExpanded' => $this->alwaysExpanded,
         ]);
     }
+
     /**
      * Get transformer for a field
      */
@@ -432,7 +456,7 @@ class ChangelogField extends Field
         $transformerClass = $modelTransformers[$field] ?? null;
 
         if ($transformerClass && class_exists($transformerClass)) {
-            return new $transformerClass();
+            return new $transformerClass;
         }
 
         return null;
@@ -472,7 +496,7 @@ class ChangelogField extends Field
             // Fall back to short class name if no specific name field found
             return class_basename($entityType);
         } catch (\Throwable $e) {
-            return ""; // Return empty string instead of ID to avoid "#123" if lookup fails
+            return ''; // Return empty string instead of ID to avoid "#123" if lookup fails
         }
     }
 }
