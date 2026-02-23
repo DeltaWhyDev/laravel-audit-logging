@@ -3,7 +3,8 @@
 namespace DeltaWhyDev\AuditLog\Services\Audit;
 
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Model;
+use Laravel\Nova\Nova;
+use Laravel\Nova\Resource;
 
 class ResourceResolver
 {
@@ -30,27 +31,27 @@ class ResourceResolver
      */
     public static function getActorDisplayName(string $actorType, string|int|null $actorId): string
     {
-        if (!$actorId) {
+        if (! $actorId) {
             return ucfirst($actorType ?: 'System');
         }
 
-        $cacheKey = $actorType . '_' . $actorId;
+        $cacheKey = $actorType.'_'.$actorId;
         if (isset(self::$resolvedActors[$cacheKey])) {
             return self::$resolvedActors[$cacheKey];
         }
 
         $userModel = self::getUserModel();
-        
+
         // Normalize class names for comparison (remove leading backslashes)
         $normalizedActorType = ltrim($actorType, '\\');
         $normalizedUserModel = ltrim($userModel, '\\');
-        
+
         // Check if actor is a user (matches configured model, auth model, or common aliases)
-        $isUser = $normalizedActorType === 'user' || 
+        $isUser = $normalizedActorType === 'user' ||
                   $normalizedActorType === $normalizedUserModel ||
                   $normalizedActorType === 'App\Models\User' ||
                   $normalizedActorType === 'App\Models\User\User' ||
-                  str_ends_with($normalizedActorType, '\User'); //Catch-all for any namespace ending in User
+                  str_ends_with($normalizedActorType, '\User'); // Catch-all for any namespace ending in User
 
         if ($isUser && $actorId) {
             // Try to resolve using the configured model first
@@ -59,41 +60,42 @@ class ResourceResolver
                 if (method_exists($userModel, 'withTrashed')) {
                     $query->withTrashed();
                 }
-                
+
                 $user = $query->find($actorId);
 
                 if ($user) {
                     // Try to find a display name from common fields
                     $nameFields = ['name', 'fullname', 'full_name', 'username', 'email'];
                     foreach ($nameFields as $field) {
-                        if (!empty($user->$field)) {
+                        if (! empty($user->$field)) {
                             return self::$resolvedActors[$cacheKey] = $user->$field;
                         }
                     }
+
                     return self::$resolvedActors[$cacheKey] = "User #{$actorId}";
                 }
             }
-            
+
             // If the configured model didn't work (e.g. actor_type is different), try using the actor_type directly if it's a valid class
             if ($normalizedActorType !== 'user' && class_exists($actorType) && $actorType !== $userModel) {
-                 try {
+                try {
                     $query = $actorType::query();
                     if (method_exists($actorType, 'withTrashed')) {
                         $query->withTrashed();
                     }
                     $user = $query->find($actorId);
-                    
+
                     if ($user) {
                         $nameFields = ['name', 'fullname', 'full_name', 'username', 'email'];
                         foreach ($nameFields as $field) {
-                            if (!empty($user->$field)) {
+                            if (! empty($user->$field)) {
                                 return self::$resolvedActors[$cacheKey] = $user->$field;
                             }
                         }
                     }
-                 } catch (\Throwable $e) {
-                     // Fall through
-                 }
+                } catch (\Throwable $e) {
+                    // Fall through
+                }
             }
 
             return self::$resolvedActors[$cacheKey] = "User #{$actorId}";
@@ -109,7 +111,7 @@ class ResourceResolver
      */
     public static function getEntityDisplayName(string $entityType, string|int $entityId): string
     {
-        $cacheKey = $entityType . '_' . $entityId;
+        $cacheKey = $entityType.'_'.$entityId;
         if (isset(self::$resolvedEntities[$cacheKey])) {
             return self::$resolvedEntities[$cacheKey];
         }
@@ -160,20 +162,20 @@ class ResourceResolver
         // 1. Try common mapping patterns based on config
         $modelBasename = class_basename($entityType);
         $novaNamespace = config('audit-log.nova.namespace', 'App\\Nova');
-        $possibleResourceClass = $novaNamespace . '\\' . $modelBasename;
 
-        if (class_exists($possibleResourceClass) && is_subclass_of($possibleResourceClass, \Laravel\Nova\Resource::class)) {
-            return '/nova/resources/' . $possibleResourceClass::uriKey() . '/' . $entityId;
+        $possibleResourceClass = $novaNamespace.'\\'.$modelBasename;
+        if (class_exists($possibleResourceClass) && is_subclass_of($possibleResourceClass, Resource::class)) {
+            return '/nova/resources/'.$possibleResourceClass::uriKey().'/'.$entityId;
         }
 
         // 2. Try to find by checking registered resources (slower but more accurate)
-        if (class_exists(\Laravel\Nova\Nova::class)) {
+        if (class_exists(Nova::class)) {
             try {
-                foreach (\Laravel\Nova\Nova::$resources as $resource) {
-                    if (is_subclass_of($resource, \Laravel\Nova\Resource::class)) {
+                foreach (Nova::$resources as $resource) {
+                    if (is_subclass_of($resource, Resource::class)) {
                         $resourceModel = $resource::$model ?? null;
                         if ($resourceModel === $entityType) {
-                            return '/nova/resources/' . $resource::uriKey() . '/' . $entityId;
+                            return '/nova/resources/'.$resource::uriKey().'/'.$entityId;
                         }
                     }
                 }

@@ -272,6 +272,12 @@ class ChangelogField extends Field
         ];
 
         foreach ($attributes as $field => $change) {
+            // Respect hidden_fields configuration specifically for this model
+            $hiddenFields = config("audit-log.hidden_fields.{$this->entityType}", []);
+            if (in_array($field, $hiddenFields)) {
+                continue;
+            }
+
             $label = $this->fieldLabels[$field]
                 ?? config("audit-log.field_labels.{$field}", null)
                 ?? $this->formatFieldName($field);
