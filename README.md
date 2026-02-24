@@ -179,5 +179,82 @@ $schedule->command('model:prune', [
 ])->daily();
 ```
 
+### BelongsToMany Relation Tracking (`track_relations`)
+
+The package can automatically log additions and removals of `BelongsToMany` relations.
+
+#### How it works
+
+There are two mechanisms for detecting pivot changes:
+
+1. **`pivotDetached` event** — fired on `$model->relation()->detach(...)`. Logged automatically. No configuration needed.
+
+2. **Pivot model `created`/`deleted` events** — fired when using `->using(PivotModel::class)`. The observer resolves both sides of the pivot and uses `track_relations` to decide **which parent is the owner** of the log entry.
+
+#### Configuration
+
+Add `$auditConfig` with a `track_relations` array to the owning model:
+
+```php
+use DeltaWhyDev\AuditLog\Traits\Auditable;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Pivot;
+
+// The custom Pivot model (optional, needed for event-based tracking)
+class OrderTag extends Pivot
+{
+    protected $table = 'order_tag';
+}
+
+// The owning model
+class Order extends Model
+{
+    use Auditable;
+
+    protected $auditConfig = [
+        // List the relation method names whose changes should appear in this model's log
+        'track_relations' => ['tags'],
+    ];
+
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'order_tag')
+            ->using(OrderTag::class)
+            ->withTimestamps();
+    }
+}
+
+// The related model — no $auditConfig needed unless it also owns logged relations
+class Tag extends Model
+{
+    // NOT declaring track_relations here prevents inverse duplicate logs
+}
+```
+
+> **Rule:** Values in `track_relations` must exactly match the **method names** of the `belongsToMany` relations on the model (e.g. `tags`, `items`, `categories`).
+
+#### Why `track_relations` is required for `->using()` relations
+
+Without it, both sides of the pivot are treated as "owners" and the observer logs on **both** models, producing a double entry:
+
+| Without `track_relations` | With `track_relations` |
+|---|---|
+| ❌ `Order` → "tags removed: Tag #5" | ✅ `Order` → "tags removed: Tag #5" |
+| ❌ `Tag` → "orders removed: Order #12" | *(skipped — not in `track_relations`)* |
+
+#### Tracking multiple relations
+
+```php
+protected $auditConfig = [
+    'track_relations' => ['tags', 'categories', 'assignees'],
+];
+```
+
+#### Inheritance
+
+A base model's `$auditConfig` is inherited by child models via standard PHP property inheritance. A child model can override it by re-declaring `$auditConfig`, which takes full precedence.
+
+---
+
 ## License
 MIT

@@ -4,6 +4,7 @@ namespace DeltaWhyDev\AuditLog\NovaComponents\ChangelogField;
 
 use DeltaWhyDev\AuditLog\Enums\AuditAction;
 use DeltaWhyDev\AuditLog\Models\AuditLog;
+use DeltaWhyDev\AuditLog\Services\Audit\AuditLogger;
 use DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver;
 use Illuminate\Support\Str;
 use Laravel\Nova\Fields\Field;
@@ -443,7 +444,16 @@ class ChangelogField extends Field
             return 'null';
         }
         if (is_bool($value)) {
-            return $value ? 'true' : 'false';
+            $formatted = AuditLogger::formatBoolean($value, $fieldName);
+            // Icon style — wrap with colored span so the Vue v-html renders it correctly
+            if (isset($formatted['color'])) {
+                $colorClass = $formatted['color'] === 'green'
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-red-600 dark:text-red-400';
+                return '<span class="font-semibold ' . $colorClass . '">' . e($formatted['display']) . '</span>';
+            }
+            // Text style — plain label
+            return (string) $formatted['display'];
         }
 
         // Handle Date Formats
@@ -451,10 +461,10 @@ class ChangelogField extends Field
             $dateFormats = config('audit-log.date_field_formats', []);
             if (array_key_exists($fieldName, $dateFormats)) {
                 try {
-                    $date = $value instanceof \DateTimeInterface 
-                        ? $value 
+                    $date = $value instanceof \DateTimeInterface
+                        ? $value
                         : \Carbon\Carbon::parse($value);
-                        
+
                     return $date->format($dateFormats[$fieldName]);
                 } catch (\Throwable $e) {
                     // Fallback to standard rendering if parsing fails
@@ -463,8 +473,8 @@ class ChangelogField extends Field
         }
 
         // Handle Enum logic natively via AuditLogger logic
-        if ($model && $fieldName && \DeltaWhyDev\AuditLog\Services\Audit\AuditLogger::isEnumField($fieldName, $model)) {
-            $formatted = \DeltaWhyDev\AuditLog\Services\Audit\AuditLogger::formatEnum($value, $fieldName, $model);
+        if ($model && $fieldName && AuditLogger::isEnumField($fieldName, $model)) {
+            $formatted = AuditLogger::formatEnum($value, $fieldName, $model);
             if (is_array($formatted) && isset($formatted['display'])) {
                 return (string) $formatted['display'];
             }

@@ -2,16 +2,12 @@
 
 namespace DeltaWhyDev\AuditLog\Observers;
 
-use DeltaWhyDev\AuditLog\Services\Audit\AuditLogger;
 use DeltaWhyDev\AuditLog\Enums\AuditAction;
+use DeltaWhyDev\AuditLog\Services\Audit\AuditLogger;
 use DeltaWhyDev\AuditLog\Traits\Auditable;
-
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use ReflectionClass;
-use ReflectionMethod;
 
 class AuditObserver
 {
@@ -22,45 +18,46 @@ class AuditObserver
     {
         if ($model instanceof Pivot) {
             $this->handlePivotEvent($model, 'created');
+
             return;
         }
 
-        if (!$this->shouldAudit($model)) {
+        if (! $this->shouldAudit($model)) {
             return;
         }
-        
-        if (!$model->shouldLogCreated()) {
+
+        if (! $model->shouldLogCreated()) {
             return;
         }
-        
+
         $this->logChange($model, AuditAction::CREATED, [], $model->getAttributes());
-        
+
         // Notify parents
         $this->handleParentLogging($model, 'created');
     }
-    
+
     /**
      * Handle the model "updated" event
      */
     public function updated(Model $model): void
     {
-        if (!$this->shouldAudit($model)) {
+        if (! $this->shouldAudit($model)) {
             return;
         }
-        
-        if (!$model->shouldLogUpdated()) {
+
+        if (! $model->shouldLogUpdated()) {
             return;
         }
-        
+
         // Get original attributes before changes
         $original = $model->getOriginal();
         $changes = $model->getChanges();
-        
+
         // Filter out excluded attributes
         $excluded = $model->getExcludedAttributes();
         $original = array_diff_key($original, array_flip($excluded));
         $changes = array_diff_key($changes, array_flip($excluded));
-        
+
         if (empty($changes)) {
             // Check if there are relation changes
             $relationChanges = $model->relationChanges ?? null;
@@ -68,20 +65,20 @@ class AuditObserver
                 return; // No meaningful changes
             }
         }
-        
+
         // Reconstruct old values
         $oldAttributes = [];
         foreach ($changes as $key => $newValue) {
             $oldAttributes[$key] = $original[$key] ?? null;
         }
-        
+
         // Merge with all original attributes for diff calculation
         $allOldAttributes = array_merge($original, $oldAttributes);
         $allNewAttributes = $model->getAttributes();
-        
+
         $this->logChange($model, AuditAction::UPDATED, $allOldAttributes, $allNewAttributes);
     }
-    
+
     /**
      * Handle the model "deleted" event
      */
@@ -89,43 +86,44 @@ class AuditObserver
     {
         if ($model instanceof Pivot) {
             $this->handlePivotEvent($model, 'deleted');
+
             return;
         }
 
-        // Notify parents BEFORE detailed audit check? 
+        // Notify parents BEFORE detailed audit check?
         // Or strictly if auditing is enabled for this model.
         // Let's check auditing enabled first.
         if ($this->shouldAudit($model)) {
-             $this->handleParentLogging($model, 'deleted');
+            $this->handleParentLogging($model, 'deleted');
         }
 
-        if (!$this->shouldAudit($model)) {
+        if (! $this->shouldAudit($model)) {
             return;
         }
-        
-        if (!$model->shouldLogDeleted()) {
+
+        if (! $model->shouldLogDeleted()) {
             return;
         }
-        
+
         $this->logChange($model, AuditAction::DELETED, $model->getAttributes(), []);
     }
-    
+
     /**
      * Handle the model "restored" event
      */
     public function restored(Model $model): void
     {
-        if (!$this->shouldAudit($model)) {
+        if (! $this->shouldAudit($model)) {
             return;
         }
-        
-        if (!$model->shouldLogRestored()) {
+
+        if (! $model->shouldLogRestored()) {
             return;
         }
-        
+
         $this->logChange($model, AuditAction::RESTORED, [], $model->getAttributes());
     }
-    
+
     /**
      * Log a change
      */
@@ -133,7 +131,7 @@ class AuditObserver
     {
         $this->processChange($model, $action, $oldAttributes, $newAttributes);
     }
-    
+
     /**
      * Process and register the change with PendingAudit
      */
@@ -141,14 +139,14 @@ class AuditObserver
     {
         // Get sensitive fields from model
         $sensitiveFields = $model->getSensitiveFields();
-        
+
         // Filter out excluded attributes before calculating diff
         $excluded = $model->getExcludedAttributes();
         $oldAttributes = array_diff_key($oldAttributes, array_flip($excluded));
         $newAttributes = array_diff_key($newAttributes, array_flip($excluded));
-        
+
         $attributes = AuditLogger::calculateDiff($oldAttributes, $newAttributes, $excluded, $sensitiveFields);
-        
+
         // Check if there are relation changes
         $relationChanges = $model->relationChanges ?? null;
         $formattedRelations = [];
@@ -156,13 +154,13 @@ class AuditObserver
         if (empty($attributes) && empty($relationChanges) && $action === AuditAction::UPDATED) {
             return; // No changes to log
         }
-        
+
         // Format relation changes if any
-        if (!empty($relationChanges)) {
+        if (! empty($relationChanges)) {
             foreach ($relationChanges as $relationName => $changes) {
                 $added = $this->getRelationModels($model, $relationName, $changes['added'] ?? []);
                 $removed = $this->getRelationModels($model, $relationName, $changes['removed'] ?? []);
-                
+
                 $formattedRelations[$relationName] = [
                     'added' => $added,
                     'removed' => $removed,
@@ -180,7 +178,7 @@ class AuditObserver
             $formattedRelations
         );
     }
-    
+
     /**
      * Get relation models by IDs
      */
@@ -189,11 +187,12 @@ class AuditObserver
         if (empty($ids)) {
             return [];
         }
-        
+
         try {
             if (method_exists($model, $relation)) {
                 $relationInstance = $model->$relation();
                 $relatedModel = $relationInstance->getRelated();
+
                 return $relatedModel->whereIn('id', $ids)->get()->map(function ($item) {
                     return $this->formatRelationData($item);
                 })->toArray();
@@ -201,10 +200,10 @@ class AuditObserver
         } catch (\Exception $e) {
             // Fallback to just IDs
         }
-        
-        return array_map(fn($id) => ['id' => $id], $ids);
+
+        return array_map(fn ($id) => ['id' => $id], $ids);
     }
-    
+
     /**
      * Handle pivot events by logging relation changes on parent models
      */
@@ -236,52 +235,64 @@ class AuditObserver
                     if ($related instanceof Model) {
                         $parents[$resolvedRelation] = $related;
                     }
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
             }
         }
-        
+
         $parentsList = array_values($parents);
-        if (empty($parentsList)) return;
+        if (empty($parentsList)) {
+            return;
+        }
 
         foreach ($parentsList as $parent) {
-             // Identify the "other" side
-             $others = array_filter($parentsList, fn($p) => $p->isNot($parent));
-             
-             foreach ($others as $other) {
-                 // Guess relation name on $parent for $other
-                 $relationName = Str::plural(Str::camel(class_basename($other)));
-                 
-                 // Check if actually Auditable?
-                 if (!method_exists($parent, 'isAuditingEnabled')) {
-                     continue;
-                 }
+            // Identify the "other" side
+            $others = array_filter($parentsList, fn ($p) => $p->isNot($parent));
 
-                 $action = AuditAction::UPDATED;
-                 
-                 // Prepare added/removed arrays
-                 $addedData = [];
-                 if ($event === 'created') {
-                     $addedData[] = $this->formatRelationData($other);
-                 }
-                 
-                 $removedData = [];
-                 if ($event === 'deleted') {
-                     $removedData[] = $this->formatRelationData($other);
-                 }
-                 
-                 // Register with PendingAudit
-                 \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->registerChange(
+            foreach ($others as $other) {
+                // Guess relation name on $parent for $other
+                $relationName = Str::plural(Str::camel(class_basename($other)));
+
+                // Only log if the parent is Auditable
+                if (! method_exists($parent, 'isAuditingEnabled')) {
+                    continue;
+                }
+
+                // Only log if the relation is explicitly listed in the parent's track_relations config.
+                // This prevents duplicate inverse logs (e.g., logging "crossDockOutgoings removed" on Contact
+                // when the intended log is "contacts removed" on CrossDockOutgoing).
+                $trackedRelations = method_exists($parent, 'getAuditConfig')
+                    ? ($parent->getAuditConfig()['track_relations'] ?? [])
+                    : [];
+
+                if (! in_array($relationName, $trackedRelations)) {
+                    continue;
+                }
+
+                // Prepare added/removed arrays
+                $addedData = [];
+                if ($event === 'created') {
+                    $addedData[] = $this->formatRelationData($other);
+                }
+
+                $removedData = [];
+                if ($event === 'deleted') {
+                    $removedData[] = $this->formatRelationData($other);
+                }
+
+                // Register with PendingAudit
+                \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->registerChange(
                     $parent,
-                    $action,
+                    AuditAction::UPDATED,
                     [], // No attribute changes on parent
                     [
                         $relationName => [
                             'added' => $addedData,
-                            'removed' => $removedData
-                        ]
+                            'removed' => $removedData,
+                        ],
                     ]
-                 );
-             }
+                );
+            }
         }
     }
 
@@ -293,27 +304,30 @@ class AuditObserver
         // Standard attach with 'using' fires 'created' on Pivot model, which we already handle.
     }
 
-
     /**
      * Handle pivot detached event (Crucial for detaching)
      */
     public function pivotDetached($model, $relationName, $pivotIds)
     {
-        if (empty($pivotIds)) return;
+        if (empty($pivotIds)) {
+            return;
+        }
 
         try {
             $relation = $model->$relationName();
             $relatedModel = $relation->getRelated();
-            
+
             // Fetch related items
             $relatedItems = $relatedModel::whereIn($relatedModel->getKeyName(), $pivotIds)->get();
-            
+
             $removedData = $relatedItems->map(function ($item) {
                 return $this->formatRelationData($item);
             })->toArray();
-            
-            if (empty($removedData)) return;
-            
+
+            if (empty($removedData)) {
+                return;
+            }
+
             // Register with PendingAudit
             \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->registerChange(
                 $model,
@@ -322,11 +336,11 @@ class AuditObserver
                 [
                     $relationName => [
                         'added' => [],
-                        'removed' => $removedData
-                    ]
+                        'removed' => $removedData,
+                    ],
                 ]
             );
-                
+
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('AuditObserver: pivotDetached failed', ['error' => $e->getMessage()]);
         }
@@ -340,13 +354,12 @@ class AuditObserver
         // Similar to attached, might duplicate 'updated' on Pivot model.
     }
 
-
     /**
      * Handle logging parent relations on create/delete
      */
     protected function handleParentLogging(Model $model, string $event): void
     {
-        if (!method_exists($model, 'getAuditParents')) {
+        if (! method_exists($model, 'getAuditParents')) {
             return;
         }
 
@@ -357,28 +370,28 @@ class AuditObserver
 
         foreach ($parents as $relationName) {
             try {
-                if (!method_exists($model, $relationName)) {
+                if (! method_exists($model, $relationName)) {
                     continue;
                 }
-                
+
                 $relation = $model->$relationName();
                 $parent = $relation->first(); // Get the parent model instance
-                
-                if (!$parent || !($parent instanceof Model)) {
+
+                if (! $parent || ! ($parent instanceof Model)) {
                     continue;
                 }
 
                 // Check if parent is auditable
-                if (!method_exists($parent, 'isAuditingEnabled')) {
+                if (! method_exists($parent, 'isAuditingEnabled')) {
                     continue;
                 }
 
                 // Prepare changes
                 $childData = $this->formatRelationData($model);
-                
+
                 $added = [];
                 $removed = [];
-                
+
                 if ($event === 'created') {
                     $added[] = $childData;
                 } elseif ($event === 'deleted') {
@@ -400,7 +413,7 @@ class AuditObserver
                         $inverseRelation => [
                             'added' => $added,
                             'removed' => $removed,
-                        ]
+                        ],
                     ]
                 );
 
@@ -415,10 +428,10 @@ class AuditObserver
      */
     protected function shouldAudit(Model $model): bool
     {
-        if (!in_array(Auditable::class, class_uses_recursive($model))) {
+        if (! in_array(Auditable::class, class_uses_recursive($model))) {
             return false;
         }
-        
+
         return $model::isAuditingEnabled();
     }
 
@@ -429,7 +442,7 @@ class AuditObserver
     {
         return [
             'id' => $model->getKey(),
-            'name' => $model->name ?? $model->title ?? $model->label ?? $model->code ?? ("#" . $model->getKey()),
+            'name' => $model->name ?? $model->title ?? $model->label ?? $model->code ?? ('#'.$model->getKey()),
             'type' => get_class($model),
         ];
     }
