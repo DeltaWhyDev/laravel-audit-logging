@@ -114,6 +114,15 @@ class ChangelogField extends Field
             $this->entityId = $resource->id;
         }
 
+        // Guard: if the resource has no ID (e.g. during creation), bail early.
+        // This can happen when Tabs resolves all field instances including detail-only
+        // fields for structural purposes, even in create/update contexts.
+        if (! $this->entityId) {
+            $this->value = collect();
+
+            return;
+        }
+
         // Load audit logs
         $query = AuditLog::forEntity($this->entityType, $this->entityId)
             ->orderBy('created_at', 'desc')
