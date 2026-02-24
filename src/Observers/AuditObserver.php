@@ -210,36 +210,33 @@ class AuditObserver
      */
     protected function handlePivotEvent(Pivot $pivot, string $event): void
     {
-        // Find belongsTo relations to identify parents
-        $reflector = new ReflectionClass($pivot);
-        $methods = $reflector->getMethods(ReflectionMethod::IS_PUBLIC);
-        
         $parents = [];
-        
-        foreach ($methods as $method) {
-            if ($method->getNumberOfParameters() > 0 || $method->class !== $pivot::class) {
-                continue;
-            }
-            
-            try {
-                $returnType = $method->getReturnType();
-            } catch (\Throwable $e) {
-                continue;
-            }
-        }
-        
+
+        // Resolve parent models from pivot _id columns, trying both camelCase and snake_case method names
         $attributes = $pivot->getAttributes();
         foreach ($attributes as $key => $value) {
-            if (Str::endsWith($key, '_id')) {
-                $relationName = Str::camel(Str::beforeLast($key, '_id'));
-                if (method_exists($pivot, $relationName)) {
-                    try {
-                        $related = $pivot->$relationName; // Get the model
-                        if ($related instanceof Model) {
-                            $parents[$relationName] = $related;
-                        }
-                    } catch (\Throwable $e) {}
+            if (! Str::endsWith($key, '_id')) {
+                continue;
+            }
+
+            $camelRelation = Str::camel(Str::beforeLast($key, '_id'));
+            $snakeRelation = Str::beforeLast($key, '_id'); // e.g. "cross_dock_outgoing"
+
+            $resolvedRelation = null;
+            foreach ([$camelRelation, $snakeRelation] as $candidate) {
+                if (method_exists($pivot, $candidate)) {
+                    $resolvedRelation = $candidate;
+                    break;
                 }
+            }
+
+            if ($resolvedRelation) {
+                try {
+                    $related = $pivot->$resolvedRelation;
+                    if ($related instanceof Model) {
+                        $parents[$resolvedRelation] = $related;
+                    }
+                } catch (\Throwable $e) {}
             }
         }
         
