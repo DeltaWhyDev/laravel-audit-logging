@@ -129,6 +129,9 @@ You can define custom transformers to format specific field values difference:
 ],
 ```
 
+> **Pro Tip: Custom HTML Layouts**
+> If you want a transformer to take full control over its rendering (e.g. returning a raw HTML table instead of standard red/green text bubbles), you can add `'is_raw_html' => true` to the array returned by your `transformDiff()` method. The `ChangelogField` frontend will output your HTML unescaped spanning the full width of the row.
+
 ### Hidden Fields
 To completely hide specific attributes or relationships from the Changelog UI display, add them to the `hidden_fields` configuration array. This is especially useful for hiding technical fields like polymorphic `_type` identifiers.
 

@@ -69,14 +69,19 @@
                             <dd class="text-sm text-gray-900 dark:text-gray-100 sm:col-span-2 flex items-center flex-wrap gap-2">
                                 <template v-if="attr.is_diff_row">
                                     <div class="flex items-center flex-wrap gap-2 w-full">
-                                        <span v-if="!attr.old_is_empty" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 opacity-80" v-html="attr.old"></span>
-                                        <div v-if="!attr.old_is_empty && !attr.new_is_empty" class="text-gray-400">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
-                                            </svg>
-                                        </div>
+                                        <template v-if="attr.is_raw_html">
+                                            <div class="w-full text-gray-900 dark:text-gray-100" v-html="attr.new"></div>
+                                        </template>
+                                        <template v-else>
+                                            <span v-if="!attr.old_is_empty" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 opacity-80" v-html="attr.old"></span>
+                                            <div v-if="!attr.old_is_empty && !attr.new_is_empty" class="text-gray-400">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                                                </svg>
+                                            </div>
 
-                                        <span v-if="!attr.new_is_empty" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" v-html="attr.new"></span>
+                                            <span v-if="!attr.new_is_empty" class="inline-flex items-center px-2.5 py-0.5 rounded-md text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" v-html="attr.new"></span>
+                                        </template>
                                     </div>
                                 </template>
                                 <template v-else>

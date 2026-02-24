@@ -321,6 +321,7 @@ class ChangelogField extends Field
                             'old_is_empty' => is_null($changeItem['old'] ?? null) || $oldItem === 'null' || (is_string($oldItem) && str_contains($oldItem, 'text-gray-500 italic">None</span>')),
                             'new_is_empty' => is_null($changeItem['new'] ?? null) || $newItem === 'null' || (is_string($newItem) && str_contains($newItem, 'text-gray-500 italic">None</span>')),
                             'is_diff_row' => true,
+                            'is_raw_html' => $changeItem['is_raw_html'] ?? false,
                         ];
                     }
 
