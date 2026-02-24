@@ -446,6 +446,22 @@ class ChangelogField extends Field
             return $value ? 'true' : 'false';
         }
 
+        // Handle Date Formats
+        if ($fieldName && !empty($value)) {
+            $dateFormats = config('audit-log.date_field_formats', []);
+            if (array_key_exists($fieldName, $dateFormats)) {
+                try {
+                    $date = $value instanceof \DateTimeInterface 
+                        ? $value 
+                        : \Carbon\Carbon::parse($value);
+                        
+                    return $date->format($dateFormats[$fieldName]);
+                } catch (\Throwable $e) {
+                    // Fallback to standard rendering if parsing fails
+                }
+            }
+        }
+
         // Handle Enum logic natively via AuditLogger logic
         if ($model && $fieldName && \DeltaWhyDev\AuditLog\Services\Audit\AuditLogger::isEnumField($fieldName, $model)) {
             $formatted = \DeltaWhyDev\AuditLog\Services\Audit\AuditLogger::formatEnum($value, $fieldName, $model);
