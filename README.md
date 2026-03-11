@@ -56,13 +56,31 @@ Decouple the package from your specific app structure:
 ```
 
 ### Actor Resolution
-Define how the "Actor" (the user performing the action) is resolved:
+Define how the "Actor" (the user performing the action) is resolved. The package automatically retrieves the user's ID and fetches them based on this configured model, without needing to save a separate `actor_type` column:
 
 ```php
 'actor' => [
     'user_model' => \App\Models\User::class,
 ],
 ```
+
+### Morph Maps (Recommended)
+To prevent your audit logs from breaking if you rename or move a model, this package supports and natively uses Laravel's **Polymorphic Morph Maps**. Instead of saving the fully qualified class name (e.g., `App\Models\User`) in the `entity_type` column, it will save the alias (e.g., `user`).
+
+To use this, simply define a morph map in your `AppServiceProvider`'s `boot` method:
+
+```php
+use Illuminate\Database\Eloquent\Relations\Relation;
+
+public function boot()
+{
+    Relation::morphMap([
+        'user' => \App\Models\User::class,
+        'product' => \App\Models\Product::class,
+    ]);
+}
+```
+The package components and resource resolvers will automatically translate these aliases back to their models when displaying the UI.
 
 ## Usage
 

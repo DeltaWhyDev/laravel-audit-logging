@@ -77,12 +77,13 @@ class ResourceResolver
         }
 
         try {
-            if (! class_exists($entityType)) {
+            $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($entityType) ?? $entityType;
+            if (! class_exists($entityClass)) {
                 return self::$resolvedEntities[$cacheKey] = "#{$entityId}";
             }
 
-            $query = $entityType::query();
-            if (method_exists($entityType, 'withTrashed')) {
+            $query = $entityClass::query();
+            if (method_exists($entityClass, 'withTrashed')) {
                 $query->withTrashed();
             }
 
@@ -119,8 +120,10 @@ class ResourceResolver
      */
     public static function getNovaResourceUri(string $entityType, string|int $entityId): ?string
     {
+        $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($entityType) ?? $entityType;
+
         // 1. Try common mapping patterns based on config
-        $modelBasename = class_basename($entityType);
+        $modelBasename = class_basename($entityClass);
         $novaNamespace = config('audit-log.nova.namespace', 'App\\Nova');
 
         $possibleResourceClass = $novaNamespace.'\\'.$modelBasename;
@@ -134,7 +137,7 @@ class ResourceResolver
                 foreach (Nova::$resources as $resource) {
                     if (is_subclass_of($resource, Resource::class)) {
                         $resourceModel = $resource::$model ?? null;
-                        if ($resourceModel === $entityType) {
+                        if ($resourceModel === $entityClass || $resourceModel === $entityType) {
                             return '/nova/resources/'.$resource::uriKey().'/'.$entityId;
                         }
                     }

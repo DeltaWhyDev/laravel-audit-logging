@@ -132,7 +132,8 @@ class AuditLog extends Model
      */
     protected function getEntityName(): string
     {
-        $parts = explode('\\', $this->entity_type);
+        $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($this->entity_type) ?? $this->entity_type;
+        $parts = explode('\\', $entityClass);
         return end($parts);
     }
 }

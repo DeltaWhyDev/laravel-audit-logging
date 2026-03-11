@@ -108,7 +108,7 @@ class ChangelogField extends Field
 
         // Auto-detect entity if not set
         if (! $this->entityType) {
-            $this->entityType = get_class($resource);
+            $this->entityType = $resource->getMorphClass();
         }
         if (! $this->entityId) {
             $this->entityId = $resource->id;
@@ -339,19 +339,22 @@ class ChangelogField extends Field
                 } else {
                     // Try to use the underlying model's cast mechanism if class exists
                     $usedDummyModel = false;
-                    if ($this->entityType && class_exists($this->entityType)) {
-                        try {
-                            $dummyModel = new $this->entityType;
+                    if ($this->entityType) {
+                        $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($this->entityType) ?? $this->entityType;
+                        if (class_exists($entityClass)) {
+                            try {
+                                $dummyModel = new $entityClass;
 
-                            $dummyModel->setAttribute($field, $old);
-                            $oldVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
+                                $dummyModel->setAttribute($field, $old);
+                                $oldVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
 
-                            $dummyModel->setAttribute($field, $new);
-                            $newVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
+                                $dummyModel->setAttribute($field, $new);
+                                $newVal = $this->formatValue($dummyModel->getAttribute($field), $field, $dummyModel);
 
-                            $usedDummyModel = true;
-                        } catch (\Throwable $e) {
-                            // Fallback mechanism if dummy model initialization fails
+                                $usedDummyModel = true;
+                            } catch (\Throwable $e) {
+                                // Fallback mechanism if dummy model initialization fails
+                            }
                         }
                     }
 
@@ -573,11 +576,12 @@ class ChangelogField extends Field
     protected function getEntityDisplayName(string $entityType, string|int $entityId): string
     {
         try {
-            if (! class_exists($entityType)) {
+            $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($entityType) ?? $entityType;
+            if (! class_exists($entityClass)) {
                 return "#{$entityId}";
             }
 
-            $entity = $entityType::find($entityId);
+            $entity = $entityClass::find($entityId);
 
             if (! $entity) {
                 return "#{$entityId} (deleted)";
@@ -599,7 +603,8 @@ class ChangelogField extends Field
             }
 
             // Fall back to short class name if no specific name field found
-            return Str::headline(class_basename($entityType));
+            $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($entityType) ?? $entityType;
+            return Str::headline(class_basename($entityClass));
         } catch (\Throwable $e) {
             return ''; // Return empty string instead of ID to avoid "#123" if lookup fails
         }

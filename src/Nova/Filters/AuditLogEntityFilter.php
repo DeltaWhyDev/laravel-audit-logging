@@ -22,7 +22,8 @@ class AuditLogEntityFilter extends Filter
         $entityTypes = AuditLog::select('entity_type')->distinct()->pluck('entity_type');
         
         return $entityTypes->mapWithKeys(function ($type) {
-            return [class_basename($type) => $type];
+            $class = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($type) ?? $type;
+            return [class_basename($class) => $type];
         })->toArray();
     }
 }

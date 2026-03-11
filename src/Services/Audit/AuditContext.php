@@ -58,7 +58,7 @@ class AuditContext
     {
         foreach ($this->pendingLogs as $log) {
             AuditLog::create([
-                'entity_type' => get_class($log['entity']),
+                'entity_type' => $log['entity']->getMorphClass(),
                 'entity_id' => $log['entity']->id,
                 'action' => $log['action'],
                 'actor_id' => $log['data']['actor_id'] ?? null,
