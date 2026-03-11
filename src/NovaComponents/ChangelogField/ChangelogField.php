@@ -171,7 +171,6 @@ class ChangelogField extends Field
                 : (string) $log->action,
             'actor' => $actorName,
             'actor_id' => $log->actor_id,
-            'actor_type' => $log->actor_type, // Useful if we need to distinguish system vs user
             'actor_url' => $actorUrl,
             'entity_name' => $this->getEntityDisplayName($this->entityType, $this->entityId),
             'entity_id' => $this->entityId,
@@ -245,7 +244,7 @@ class ChangelogField extends Field
      */
     protected function getActorName(AuditLog $log): string
     {
-        return ResourceResolver::getActorDisplayName($log->actor_type, $log->actor_id);
+        return ResourceResolver::getActorDisplayName($log->actor_id);
     }
 
     /**
@@ -255,7 +254,7 @@ class ChangelogField extends Field
     {
         $userModel = ResourceResolver::getUserModel();
 
-        if (($log->actor_type === 'user' || $log->actor_type === $userModel) && $log->actor_id) {
+        if ($log->actor_id) {
             return $this->getNovaResourceUri($userModel, $log->actor_id);
         }
 

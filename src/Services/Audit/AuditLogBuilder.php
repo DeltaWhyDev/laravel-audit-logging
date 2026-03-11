@@ -11,7 +11,6 @@ class AuditLogBuilder
 {
     protected Model $entity;
     protected AuditAction|string $action;
-    protected ?string $actorType = null;
     protected ?int $actorId = null;
     protected ?array $attributes = null;
     protected ?array $relations = null;
@@ -38,13 +37,10 @@ class AuditLogBuilder
     {
         if (is_object($actor)) {
             // Assume it's a User model
-            $this->actorType = 'user';
             $this->actorId = $actor->id;
         } elseif (is_array($actor)) {
-            $this->actorType = $actor['type'] ?? 'system';
             $this->actorId = $actor['id'] ?? null;
         } else {
-            $this->actorType = 'system';
             $this->actorId = null;
         }
         
@@ -125,9 +121,8 @@ class AuditLogBuilder
     public function log(): ?AuditLog
     {
         // Resolve actor if not set
-        if ($this->actorType === null) {
+        if ($this->actorId === null) {
             $actor = AuditLogger::resolveActor();
-            $this->actorType = $actor['type'];
             $this->actorId = $actor['id'];
         }
         
@@ -148,7 +143,6 @@ class AuditLogBuilder
             'entity_type' => get_class($this->entity),
             'entity_id' => $this->entity->id,
             'action' => $actionValue,
-            'actor_type' => $this->actorType,
             'actor_id' => $this->actorId,
             'attributes' => $this->attributes,
             'relations' => $this->relations,

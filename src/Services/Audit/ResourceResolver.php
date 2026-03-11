@@ -29,81 +29,41 @@ class ResourceResolver
     /**
      * Get human-readable display name for an actor.
      */
-    public static function getActorDisplayName(string $actorType, string|int|null $actorId): string
+    public static function getActorDisplayName(string|int|null $actorId): string
     {
         if (! $actorId) {
-            return ucfirst($actorType ?: 'System');
+            return 'System';
         }
 
-        $cacheKey = $actorType.'_'.$actorId;
+        $cacheKey = 'user_'.$actorId;
         if (isset(self::$resolvedActors[$cacheKey])) {
             return self::$resolvedActors[$cacheKey];
         }
 
         $userModel = self::getUserModel();
 
-        // Normalize class names for comparison (remove leading backslashes)
-        $normalizedActorType = ltrim($actorType, '\\');
-        $normalizedUserModel = ltrim($userModel, '\\');
-
-        // Check if actor is a user (matches configured model, auth model, or common aliases)
-        $isUser = $normalizedActorType === 'user' ||
-                  $normalizedActorType === $normalizedUserModel ||
-                  $normalizedActorType === 'App\Models\User' ||
-                  $normalizedActorType === 'App\Models\User\User' ||
-                  str_ends_with($normalizedActorType, '\User'); // Catch-all for any namespace ending in User
-
-        if ($isUser && $actorId) {
-            // Try to resolve using the configured model first
-            if (class_exists($userModel)) {
-                $query = $userModel::query();
-                if (method_exists($userModel, 'withTrashed')) {
-                    $query->withTrashed();
-                }
-
-                $user = $query->find($actorId);
-
-                if ($user) {
-                    // Try to find a display name from common fields
-                    $nameFields = ['name', 'fullname', 'full_name', 'username', 'email'];
-                    foreach ($nameFields as $field) {
-                        if (! empty($user->$field)) {
-                            return self::$resolvedActors[$cacheKey] = $user->$field;
-                        }
-                    }
-
-                    return self::$resolvedActors[$cacheKey] = "User #{$actorId}";
-                }
+        if (class_exists($userModel)) {
+            $query = $userModel::query();
+            if (method_exists($userModel, 'withTrashed')) {
+                $query->withTrashed();
             }
 
-            // If the configured model didn't work (e.g. actor_type is different), try using the actor_type directly if it's a valid class
-            if ($normalizedActorType !== 'user' && class_exists($actorType) && $actorType !== $userModel) {
-                try {
-                    $query = $actorType::query();
-                    if (method_exists($actorType, 'withTrashed')) {
-                        $query->withTrashed();
-                    }
-                    $user = $query->find($actorId);
+            $user = $query->find($actorId);
 
-                    if ($user) {
-                        $nameFields = ['name', 'fullname', 'full_name', 'username', 'email'];
-                        foreach ($nameFields as $field) {
-                            if (! empty($user->$field)) {
-                                return self::$resolvedActors[$cacheKey] = $user->$field;
-                            }
-                        }
+            if ($user) {
+                // Try to find a display name from common fields
+                $nameFields = ['name', 'fullname', 'full_name', 'username', 'email'];
+                foreach ($nameFields as $field) {
+                    if (! empty($user->$field)) {
+                        return self::$resolvedActors[$cacheKey] = $user->$field;
                     }
-                } catch (\Throwable $e) {
-                    // Fall through
                 }
-            }
 
-            return self::$resolvedActors[$cacheKey] = "User #{$actorId}";
+                return self::$resolvedActors[$cacheKey] = "User #{$actorId}";
+            }
         }
 
-        return self::$resolvedActors[$cacheKey] = class_exists($actorType)
-            ? class_basename($actorType)." #{$actorId}"
-            : ucfirst($actorType ?: 'System');
+        return self::$resolvedActors[$cacheKey] = "User #{$actorId}";
     }
 
     /**

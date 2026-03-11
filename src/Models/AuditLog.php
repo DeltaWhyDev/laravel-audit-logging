@@ -40,7 +40,6 @@ class AuditLog extends Model
         'entity_type',
         'entity_id',
         'action',
-        'actor_type',
         'actor_id',
         'attributes',
         'relations',
@@ -70,10 +69,8 @@ class AuditLog extends Model
     /**
      * Scope: Filter by actor
      */
-    public function scopeByActor(Builder $query, string $actorType, ?int $actorId = null): Builder
+    public function scopeByActor(Builder $query, int $actorId): Builder
     {
-        $query->where('actor_type', $actorType);
-        
         if ($actorId !== null) {
             $query->where('actor_id', $actorId);
         }
@@ -127,7 +124,7 @@ class AuditLog extends Model
      */
     protected function getActorName(): string
     {
-        return \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getActorDisplayName($this->actor_type, $this->actor_id);
+        return \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getActorDisplayName($this->actor_id);
     }
     
     /**

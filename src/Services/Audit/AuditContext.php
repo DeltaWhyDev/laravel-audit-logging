@@ -61,7 +61,6 @@ class AuditContext
                 'entity_type' => get_class($log['entity']),
                 'entity_id' => $log['entity']->id,
                 'action' => $log['action'],
-                'actor_type' => $log['data']['actor_type'] ?? 'system',
                 'actor_id' => $log['data']['actor_id'] ?? null,
                 'attributes' => $log['data']['attributes'] ?? null,
                 'relations' => $log['data']['relations'] ?? null,

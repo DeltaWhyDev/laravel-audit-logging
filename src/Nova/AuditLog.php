@@ -80,9 +80,9 @@ class AuditLog extends Resource
                 ->sortable(),
 
             Text::make('Summary', function () {
-                $actorName = ResourceResolver::getActorDisplayName($this->actor_type, $this->actor_id);
+                $actorName = ResourceResolver::getActorDisplayName($this->actor_id);
                 $actorHtml = $actorName;
-                if ($this->actor_type === 'user' && $this->actor_id) {
+                if ($this->actor_id) {
                     $userModel = ResourceResolver::getUserModel();
                     $actorUri = $this->getNovaResourceUri($userModel, $this->actor_id);
                     if ($actorUri) {
@@ -255,7 +255,7 @@ class AuditLog extends Resource
 
     protected function getActorDisplayName(): string
     {
-        return ResourceResolver::getActorDisplayName($this->actor_type, $this->actor_id);
+        return ResourceResolver::getActorDisplayName($this->actor_id);
     }
 
     /**
@@ -263,7 +263,7 @@ class AuditLog extends Resource
      */
     protected function getActorUri(): ?string
     {
-        if ($this->actor_type === 'user' && $this->actor_id) {
+        if ($this->actor_id) {
             $userModel = ResourceResolver::getUserModel();
 
             return $this->getNovaResourceUri($userModel, $this->actor_id);

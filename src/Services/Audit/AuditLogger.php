@@ -176,7 +176,6 @@ class AuditLogger
         
         if ($user) {
             return [
-                'type' => 'user',
                 'id' => $user->id,
             ];
         }
@@ -184,13 +183,11 @@ class AuditLogger
         // Check if running in a job
         if (app()->runningInConsole()) {
             return [
-                'type' => 'system',
                 'id' => null,
             ];
         }
         
         return [
-            'type' => 'system',
             'id' => null,
         ];
     }

@@ -15,8 +15,7 @@ class AuditLogActorFilter extends Filter
     {
         $userModel = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getUserModel();
         
-        return $query->where('actor_id', $value)
-                     ->whereIn('actor_type', [$userModel, 'user']);
+        return $query->where('actor_id', $value);
     }
 
     public function options(Request $request)
@@ -24,8 +23,7 @@ class AuditLogActorFilter extends Filter
         $userModel = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getUserModel();
         
         // Get all unique actors who have performed an action
-        $actorIds = AuditLog::where('actor_type', $userModel)
-                            ->orWhere('actor_type', 'user')
+        $actorIds = AuditLog::whereNotNull('actor_id')
                             ->distinct()
                             ->pluck('actor_id');
         
@@ -43,7 +41,7 @@ class AuditLogActorFilter extends Filter
             return $query->whereIn('id', $actorIds)
                 ->get()
                 ->mapWithKeys(function ($user) {
-                    return [\DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getActorDisplayName(get_class($user), $user->id) => $user->id];
+                    return [\DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getActorDisplayName($user->id) => $user->id];
                 })
                 ->toArray();
         }

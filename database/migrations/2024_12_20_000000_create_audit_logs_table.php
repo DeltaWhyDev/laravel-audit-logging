@@ -21,7 +21,6 @@ return new class extends Migration
             $table->unsignedTinyInteger('action');
             
             // Actor Information
-            $table->string('actor_type', 50);
             $table->unsignedBigInteger('actor_id')->nullable();
             
             // Change Data (JSON)
@@ -34,7 +33,7 @@ return new class extends Migration
             
             // Indexes
             $table->index(['entity_type', 'entity_id'], 'idx_entity');
-            $table->index(['actor_type', 'actor_id'], 'idx_actor');
+            $table->index('actor_id', 'idx_actor');
             $table->index('action', 'idx_action');
             $table->index('created_at', 'idx_created_at');
             $table->index(['entity_type', 'entity_id', 'action'], 'idx_entity_action');
