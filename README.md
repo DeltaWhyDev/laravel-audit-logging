@@ -147,8 +147,38 @@ You can define custom transformers to format specific field values difference:
 ],
 ```
 
-> **Pro Tip: Custom HTML Layouts**
-> If you want a transformer to take full control over its rendering (e.g. returning a raw HTML table instead of standard red/green text bubbles), you can add `'is_raw_html' => true` to the array returned by your `transformDiff()` method. The `ChangelogField` frontend will output your HTML unescaped spanning the full width of the row.
+> **Pro Tip: Custom HTML Layouts (`is_raw_html`)**
+> If you want a transformer to take full control over its rendering (e.g. returning a raw HTML table instead of standard red/green text bubbles) without using Blade views, you can add `'is_raw_html' => true` to the array returned by your `transformDiff()` method. The `ChangelogField` frontend will output your HTML unescaped spanning the full width of the row.
+
+### Custom View Components (Blade Templates)
+If you have complex HTML layouts that you do not want to hardcode inside your Transformer's PHP strings, you can delegate the rendering to standard Laravel Blade views.
+Use the `custom_views` block in the configuration file to map a key to a specific Blade template:
+
+```php
+// config/audit-log.php
+'custom_views' => [
+    'my_custom_table' => 'audit-log.custom.my-table',
+],
+```
+
+Inside your Transformer's `transformDiff()` function, skip returning `old` or `new` strings or raw html entirely. Instead, return the exact layout configuration:
+
+```php
+public function transformDiff($old, $new, array $context = []): array|string|null
+{
+    return [
+        [
+            'label' => 'Entities',
+            'custom_view' => config('audit-log.custom_views.my_custom_table', 'audit-log.custom.my-table'),
+            'view_data' => [
+                'diff' => $new, // Passing variables to the Blade view
+            ],
+        ],
+    ];
+}
+```
+
+The Changelog component will automatically parse and inject this Blade view directly into the Nova UI.
 
 ### Hidden Fields
 To completely hide specific attributes or relationships from the Changelog UI display, add them to the `hidden_fields` configuration array. This is especially useful for hiding technical fields like polymorphic `_type` identifiers.
