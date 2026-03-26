@@ -19,6 +19,51 @@ class ResourceResolver
     protected static array $resolvedEntities = [];
 
     /**
+     * Resolve a Model to a short entity_type alias for storage.
+     * Checks the package entity_type_map first, then falls back to getMorphClass().
+     */
+    public static function resolveEntityType(\Illuminate\Database\Eloquent\Model $entity): string
+    {
+        $map = config('audit-log.entity_type_map', []);
+
+        if (! empty($map)) {
+            $fqcn = get_class($entity);
+
+            if (isset($map[$fqcn])) {
+                return $map[$fqcn];
+            }
+        }
+
+        return $entity->getMorphClass();
+    }
+
+    /**
+     * Resolve an entity_type alias back to a FQCN.
+     * Checks the package entity_type_map first, then Laravel's global morphMap,
+     * then treats the value as a FQCN directly.
+     */
+    public static function resolveEntityClass(string $entityType): string
+    {
+        // 1. Check package entity_type_map (reversed: alias => FQCN)
+        $map = config('audit-log.entity_type_map', []);
+        $flipped = array_flip($map);
+
+        if (isset($flipped[$entityType])) {
+            return $flipped[$entityType];
+        }
+
+        // 2. Check Laravel's global morphMap
+        $morphed = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($entityType);
+
+        if ($morphed) {
+            return $morphed;
+        }
+
+        // 3. Treat as FQCN
+        return $entityType;
+    }
+
+    /**
      * Get the configured User model class name.
      */
     public static function getUserModel(): string
@@ -77,7 +122,7 @@ class ResourceResolver
         }
 
         try {
-            $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($entityType) ?? $entityType;
+            $entityClass = self::resolveEntityClass($entityType);
             if (! class_exists($entityClass)) {
                 return self::$resolvedEntities[$cacheKey] = "#{$entityId}";
             }
@@ -120,7 +165,7 @@ class ResourceResolver
      */
     public static function getNovaResourceUri(string $entityType, string|int $entityId): ?string
     {
-        $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($entityType) ?? $entityType;
+        $entityClass = self::resolveEntityClass($entityType);
 
         // 1. Try common mapping patterns based on config
         $modelBasename = class_basename($entityClass);

@@ -132,7 +132,7 @@ class AuditLog extends Model
      */
     protected function getEntityName(): string
     {
-        $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($this->entity_type) ?? $this->entity_type;
+        $entityClass = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::resolveEntityClass($this->entity_type);
         $parts = explode('\\', $entityClass);
         return end($parts);
     }

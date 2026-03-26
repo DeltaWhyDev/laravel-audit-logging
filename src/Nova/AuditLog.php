@@ -90,7 +90,7 @@ class AuditLog extends Resource
                     }
                 }
 
-                $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($this->entity_type) ?? $this->entity_type;
+                $entityClass = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::resolveEntityClass($this->entity_type);
                 $entityName = Str::headline(class_basename($entityClass));
                 $entityDisplayName = $this->getEntityDisplayName($this->entity_type, $this->entity_id);
                 $entityHtml = sprintf('%s: %s', $entityName, e($entityDisplayName));

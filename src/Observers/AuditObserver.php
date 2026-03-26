@@ -250,9 +250,6 @@ class AuditObserver
             $others = array_filter($parentsList, fn ($p) => $p->isNot($parent));
 
             foreach ($others as $other) {
-                // Guess relation name on $parent for $other
-                $relationName = Str::plural(Str::camel(class_basename($other)));
-
                 // Only log if the parent is Auditable
                 if (! method_exists($parent, 'isAuditingEnabled')) {
                     continue;
@@ -264,6 +261,13 @@ class AuditObserver
                 $trackedRelations = method_exists($parent, 'getAuditConfig')
                     ? ($parent->getAuditConfig()['track_relations'] ?? [])
                     : [];
+
+                // Guess relation name on $parent for $other — try both the related model name
+                // and the pivot class name (for polymorphic pivots like OuterPackingMaterial)
+                $relationName = Str::plural(Str::camel(class_basename($other)));
+                if (! in_array($relationName, $trackedRelations)) {
+                    $relationName = Str::plural(Str::camel(class_basename($pivot)));
+                }
 
                 if (! in_array($relationName, $trackedRelations)) {
                     continue;

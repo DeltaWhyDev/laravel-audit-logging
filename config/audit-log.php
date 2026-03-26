@@ -281,6 +281,23 @@ return [
     | Configure Nova integration settings.
     |
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Entity Type Map
+    |--------------------------------------------------------------------------
+    |
+    | Map fully qualified class names to short aliases for the entity_type
+    | column. Works independently of Laravel's Relation::morphMap().
+    | When empty, falls back to the model's getMorphClass() (which uses
+    | the global morphMap if defined, or returns the FQCN).
+    |
+    */
+    'entity_type_map' => [
+        // Example:
+        // \App\Models\Pallet\Pallet::class => 'pallet',
+        // \App\Models\Packaging\Packaging::class => 'packaging',
+    ],
+
     'model_namespace' => 'App\\Models', // Default namespace for models
 
     'nova' => [

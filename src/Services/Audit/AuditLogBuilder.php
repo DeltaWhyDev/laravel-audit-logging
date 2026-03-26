@@ -140,7 +140,7 @@ class AuditLogBuilder
             : AuditAction::fromString($this->action)->value;
             
         $data = [
-            'entity_type' => $this->entity->getMorphClass(),
+            'entity_type' => ResourceResolver::resolveEntityType($this->entity),
             'entity_id' => $this->entity->id,
             'action' => $actionValue,
             'actor_id' => $this->actorId,

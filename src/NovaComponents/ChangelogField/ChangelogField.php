@@ -108,7 +108,7 @@ class ChangelogField extends Field
 
         // Auto-detect entity if not set
         if (! $this->entityType) {
-            $this->entityType = $resource->getMorphClass();
+            $this->entityType = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::resolveEntityType($resource);
         }
         if (! $this->entityId) {
             $this->entityId = $resource->id;
@@ -340,7 +340,7 @@ class ChangelogField extends Field
                     // Try to use the underlying model's cast mechanism if class exists
                     $usedDummyModel = false;
                     if ($this->entityType) {
-                        $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($this->entityType) ?? $this->entityType;
+                        $entityClass = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::resolveEntityClass($this->entityType);
                         if (class_exists($entityClass)) {
                             try {
                                 $dummyModel = new $entityClass;
@@ -576,7 +576,7 @@ class ChangelogField extends Field
     protected function getEntityDisplayName(string $entityType, string|int $entityId): string
     {
         try {
-            $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($entityType) ?? $entityType;
+            $entityClass = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::resolveEntityClass($entityType);
             if (! class_exists($entityClass)) {
                 return "#{$entityId}";
             }
@@ -603,7 +603,7 @@ class ChangelogField extends Field
             }
 
             // Fall back to short class name if no specific name field found
-            $entityClass = \Illuminate\Database\Eloquent\Relations\Relation::getMorphedModel($entityType) ?? $entityType;
+            $entityClass = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::resolveEntityClass($entityType);
             return Str::headline(class_basename($entityClass));
         } catch (\Throwable $e) {
             return ''; // Return empty string instead of ID to avoid "#123" if lookup fails
