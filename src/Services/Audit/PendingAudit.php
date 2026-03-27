@@ -36,28 +36,18 @@ class PendingAudit
     public function registerChange(Model $model, AuditAction $action, array $attributes = [], array $relations = []): void
     {
         $key = $this->getKey($model);
+        $isNew = !isset($this->pending[$key]);
 
-        if (!isset($this->pending[$key])) {
+        if ($isNew) {
             $this->pending[$key] = [
                 'model' => $model,
                 'action' => $action,
                 'attributes' => [],
                 'relations' => [],
             ];
-            
-            // Register flush callback if inside transaction
-            if (DB::transactionLevel() > 0) {
-                DB::afterCommit(function () use ($key) {
-                    $this->flush($key);
-                });
-            } else {
-                // If not in transaction, flush immediately
-                $this->flush($key);
-                return;
-            }
         }
 
-        // Merge action (Update takes precedence if we are accumulating changes)
+        // Always merge action, attributes and relations before flushing
         $currentAction = $this->pending[$key]['action'];
         if ($action === AuditAction::DELETED) {
              $this->pending[$key]['action'] = AuditAction::DELETED;
@@ -67,18 +57,14 @@ class PendingAudit
              }
         }
 
-        // Merge attributes
         foreach ($attributes as $field => $change) {
             if (!isset($this->pending[$key]['attributes'][$field])) {
                 $this->pending[$key]['attributes'][$field] = $change;
             } else {
-                // Update "new" value, keep original "old" value
                 $this->pending[$key]['attributes'][$field]['new'] = $change['new'];
             }
         }
 
-        // Merge relations
-        // Structure: ['relationName' => ['added' => [], 'removed' => []]]
         foreach ($relations as $relationName => $changes) {
             if (!isset($this->pending[$key]['relations'][$relationName])) {
                 $this->pending[$key]['relations'][$relationName] = [
@@ -86,19 +72,30 @@ class PendingAudit
                     'removed' => [],
                 ];
             }
-            
+
             if (!empty($changes['added'])) {
                 $this->pending[$key]['relations'][$relationName]['added'] = array_merge(
                     $this->pending[$key]['relations'][$relationName]['added'],
                     $changes['added']
                 );
             }
-            
+
             if (!empty($changes['removed'])) {
                 $this->pending[$key]['relations'][$relationName]['removed'] = array_merge(
                     $this->pending[$key]['relations'][$relationName]['removed'],
                     $changes['removed']
                 );
+            }
+        }
+
+        // Schedule flush only once per key
+        if ($isNew) {
+            if (DB::transactionLevel() > 0) {
+                DB::afterCommit(function () use ($key) {
+                    $this->flush($key);
+                });
+            } else {
+                $this->flush($key);
             }
         }
     }
