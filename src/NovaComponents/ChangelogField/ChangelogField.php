@@ -581,10 +581,11 @@ class ChangelogField extends Field
                 return "#{$entityId}";
             }
 
+            $entityTypeName = Str::headline(class_basename($entityClass));
             $entity = $entityClass::find($entityId);
 
             if (! $entity) {
-                return "#{$entityId} (deleted)";
+                return "{$entityTypeName}: #{$entityId} (deleted)";
             }
 
             // Try common name fields in order of preference
@@ -595,16 +596,15 @@ class ChangelogField extends Field
                     $value = $entity->{$field};
                     // Truncate long names
                     if (strlen($value) > 30) {
-                        return substr($value, 0, 27).'...';
+                        $value = substr($value, 0, 27).'...';
                     }
 
-                    return $value;
+                    return "{$entityTypeName}: {$value}";
                 }
             }
 
-            // Fall back to short class name if no specific name field found
-            $entityClass = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::resolveEntityClass($entityType);
-            return Str::headline(class_basename($entityClass));
+            // Fall back to entity type with ID
+            return "{$entityTypeName}: #{$entityId}";
         } catch (\Throwable $e) {
             return ''; // Return empty string instead of ID to avoid "#123" if lookup fails
         }

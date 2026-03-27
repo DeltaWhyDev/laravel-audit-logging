@@ -64,23 +64,46 @@ Define how the "Actor" (the user performing the action) is resolved. The package
 ],
 ```
 
-### Morph Maps (Recommended)
-To prevent your audit logs from breaking if you rename or move a model, this package supports and natively uses Laravel's **Polymorphic Morph Maps**. Instead of saving the fully qualified class name (e.g., `App\Models\User`) in the `entity_type` column, it will save the alias (e.g., `user`).
+### Entity Type Resolution
 
-To use this, simply define a morph map in your `AppServiceProvider`'s `boot` method:
+By default the package stores the `entity_type` column using the model's `getMorphClass()` value, which returns the fully qualified class name (e.g., `App\Models\User`) or its morph-map alias if one is defined globally.
+
+There are two ways to control what value is stored:
+
+#### Option A: Package-level `entity_type_map` (Recommended)
+
+Use this when you want short aliases **only for audit logs** without affecting the rest of your application. This is especially useful when you cannot (or don't want to) register a global `Relation::morphMap()`.
 
 ```php
+// config/audit-log.php
+'entity_type_map' => [
+    \App\Models\User::class => 'user',
+    \App\Models\Pallet\Pallet::class => 'pallet',
+    \App\Models\Packaging\Packaging::class => 'packaging',
+],
+```
+
+The package resolves types in this order:
+1. **Write** (model &rarr; alias): checks `entity_type_map` first, then falls back to `getMorphClass()`
+2. **Read** (alias &rarr; model): checks `entity_type_map`, then Laravel's global morph map, then treats the value as a FQCN
+
+This means **both old FQCN records and new alias records** resolve correctly — no data migration needed when you add the map.
+
+#### Option B: Laravel's global `Relation::morphMap()`
+
+If your application already uses a global morph map, the package respects it automatically. No additional configuration is needed — the `entity_type_map` can stay empty.
+
+```php
+// AppServiceProvider::boot()
 use Illuminate\Database\Eloquent\Relations\Relation;
 
-public function boot()
-{
-    Relation::morphMap([
-        'user' => \App\Models\User::class,
-        'product' => \App\Models\Product::class,
-    ]);
-}
+Relation::morphMap([
+    'user' => \App\Models\User::class,
+    'product' => \App\Models\Product::class,
+]);
 ```
-The package components and resource resolvers will automatically translate these aliases back to their models when displaying the UI.
+
+> **Note:** `Relation::morphMap()` is global and affects all polymorphic columns in your application, not just audit logs. If you only want aliases in the audit log table, use Option A instead.
 
 ## Usage
 
