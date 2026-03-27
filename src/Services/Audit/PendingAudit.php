@@ -20,11 +20,6 @@ class PendingAudit
     protected array $pending = [];
 
     /**
-     * Whether the terminating flush callback has been registered
-     */
-    protected bool $terminatingRegistered = false;
-
-    /**
      * Get singleton instance
      */
     public static function getInstance(): self
@@ -99,29 +94,12 @@ class PendingAudit
                 DB::afterCommit(function () use ($key) {
                     $this->flush($key);
                 });
-            } else {
-                // Defer flush to end of request so that sync() operations
-                // (which fire separate detach/attach events) merge into one log entry
-                $this->registerTerminatingFlush();
             }
+            // Non-transactional changes are flushed by the terminating callback
+            // registered in AuditLogServiceProvider::boot(). This allows sync()
+            // operations (which fire separate detach/attach events) to merge
+            // into a single audit log entry.
         }
-    }
-
-    /**
-     * Register a single terminating callback to flush all pending changes
-     * at the end of the request lifecycle
-     */
-    protected function registerTerminatingFlush(): void
-    {
-        if ($this->terminatingRegistered) {
-            return;
-        }
-
-        $this->terminatingRegistered = true;
-
-        app()->terminating(function () {
-            $this->flushAll();
-        });
     }
 
     /**

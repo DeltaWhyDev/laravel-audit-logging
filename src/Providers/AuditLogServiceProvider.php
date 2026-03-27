@@ -35,6 +35,13 @@ class AuditLogServiceProvider extends ServiceProvider
         // Load migrations
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
 
+        // Flush any pending audit logs at the end of the request/command lifecycle.
+        // Registered early so it captures all non-transactional changes accumulated
+        // during the request (e.g. sync() which fires multiple pivot events).
+        $this->app->terminating(function () {
+            \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->flushAll();
+        });
+
         // Register Nova service provider if Nova is available
         if (class_exists(\Laravel\Nova\Nova::class) && config('audit-log.nova.enabled', true)) {
             $this->app->register(NovaServiceProvider::class);
