@@ -109,9 +109,9 @@ class AuditLog extends Model
         $actorName = $this->getActorName();
         $entityName = $this->getEntityName();
         $entityDisplayName = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getEntityDisplayName($this->entity_type, $this->entity_id);
-        
+
         return sprintf(
-            '%s %s %s %s',
+            '%s %s %s: %s',
             $actorName,
             $this->action->label(),
             $entityName,

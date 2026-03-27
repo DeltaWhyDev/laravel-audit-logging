@@ -282,6 +282,11 @@ class ChangelogField extends Field
         ];
 
         foreach ($attributes as $field => $change) {
+            // Reset per-iteration variables to prevent carry-over from previous field
+            $oldVal = null;
+            $newVal = null;
+            $diff = null;
+
             // Respect hidden_fields configuration specifically for this model
             $hiddenFields = config("audit-log.hidden_fields.{$this->entityType}", []);
             if (in_array($field, $hiddenFields)) {
@@ -358,11 +363,9 @@ class ChangelogField extends Field
                         }
                     }
 
-                    if (! isset($oldVal) && ! isset($newVal)) {
-                        if (! $usedDummyModel) {
-                            $oldVal = $this->formatValue($old, $field);
-                            $newVal = $this->formatValue($new, $field);
-                        }
+                    if (is_null($oldVal) && is_null($newVal)) {
+                        $oldVal = $this->formatValue($old, $field);
+                        $newVal = $this->formatValue($new, $field);
                     }
                 }
             }
