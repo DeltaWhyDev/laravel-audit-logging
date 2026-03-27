@@ -29,8 +29,9 @@ class ResourceResolver
         if (! empty($map)) {
             $fqcn = get_class($entity);
 
-            if (isset($map[$fqcn])) {
-                return $map[$fqcn];
+            $alias = array_search($fqcn, $map);
+            if ($alias !== false) {
+                return $alias;
             }
         }
 
@@ -44,12 +45,11 @@ class ResourceResolver
      */
     public static function resolveEntityClass(string $entityType): string
     {
-        // 1. Check package entity_type_map (reversed: alias => FQCN)
+        // 1. Check package entity_type_map (alias => FQCN)
         $map = config('audit-log.entity_type_map', []);
-        $flipped = array_flip($map);
 
-        if (isset($flipped[$entityType])) {
-            return $flipped[$entityType];
+        if (isset($map[$entityType])) {
+            return $map[$entityType];
         }
 
         // 2. Check Laravel's global morphMap

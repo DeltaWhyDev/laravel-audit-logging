@@ -458,7 +458,10 @@ class ChangelogField extends Field
         if (is_null($value)) {
             return 'null';
         }
-        if (is_bool($value)) {
+
+        $isBoolField = is_bool($value) || ($model && $fieldName && AuditLogger::isBooleanField($fieldName, $model));
+
+        if ($isBoolField) {
             $formatted = AuditLogger::formatBoolean($value, $fieldName);
             // Icon style — wrap with colored span so the Vue v-html renders it correctly
             if (isset($formatted['color'])) {

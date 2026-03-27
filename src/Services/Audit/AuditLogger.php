@@ -285,7 +285,21 @@ class AuditLogger
                 $enum = $value;
             } else {
                 // Try to create enum from value
-                $enum = $enumClass::from($value);
+                $enum = null;
+                if (method_exists($enumClass, 'tryFrom')) {
+                    $enum = $enumClass::tryFrom($value) 
+                         ?? $enumClass::tryFrom((int)$value) 
+                         ?? $enumClass::tryFrom((string)$value);
+                }
+                
+                if (!$enum) {
+                    // Fallback to error handling logic if still not found
+                    if (method_exists($enumClass, 'from')) {
+                        $enum = $enumClass::from($value); // Will trigger the ValueError caught below
+                    } else {
+                        return (string) $value;
+                    }
+                }
             }
             
             // Get display method
