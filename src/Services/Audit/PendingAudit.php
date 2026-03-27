@@ -20,6 +20,11 @@ class PendingAudit
     protected array $pending = [];
 
     /**
+     * Whether the terminating flush callback has been registered
+     */
+    protected bool $terminatingRegistered = false;
+
+    /**
      * Get singleton instance
      */
     public static function getInstance(): self
@@ -95,8 +100,37 @@ class PendingAudit
                     $this->flush($key);
                 });
             } else {
-                $this->flush($key);
+                // Defer flush to end of request so that sync() operations
+                // (which fire separate detach/attach events) merge into one log entry
+                $this->registerTerminatingFlush();
             }
+        }
+    }
+
+    /**
+     * Register a single terminating callback to flush all pending changes
+     * at the end of the request lifecycle
+     */
+    protected function registerTerminatingFlush(): void
+    {
+        if ($this->terminatingRegistered) {
+            return;
+        }
+
+        $this->terminatingRegistered = true;
+
+        app()->terminating(function () {
+            $this->flushAll();
+        });
+    }
+
+    /**
+     * Flush all pending changes
+     */
+    public function flushAll(): void
+    {
+        foreach (array_keys($this->pending) as $key) {
+            $this->flush($key);
         }
     }
 
