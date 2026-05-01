@@ -15,9 +15,24 @@ trait Auditable
      */
     public static function bootAuditable(): void
     {
-        // Register observer
-        static::observe(AuditObserver::class);
-        
+        // Register observer events directly instead of static::observe(...).
+        // observe() calls bootIfNotBooted() on the model, but bootAuditable()
+        // itself runs *during* that same bootIfNotBooted() (it's a trait boot
+        // method). On Laravel <=12 the re-entrant call was a silent no-op;
+        // Laravel 13 turns it into a hard LogicException. Registering each
+        // event hook directly avoids the re-entry while preserving identical
+        // observer behavior on Laravel 10/11/12 and 13.
+        $observableEvents = [
+            'retrieved', 'creating', 'created', 'updating', 'updated',
+            'saving', 'saved', 'deleting', 'deleted', 'trashed',
+            'forceDeleting', 'forceDeleted', 'restoring', 'restored', 'replicating',
+        ];
+        foreach ($observableEvents as $event) {
+            if (method_exists(AuditObserver::class, $event)) {
+                static::registerModelEvent($event, [AuditObserver::class, $event]);
+            }
+        }
+
         // Register Pivot events manually as they are not standard observable events
         static::registerModelEvent('pivotAttached', function ($model, $relationName, $pivotIds, $pivotAttributes) {
             (new AuditObserver)->pivotAttached($model, $relationName, $pivotIds, $pivotAttributes);
