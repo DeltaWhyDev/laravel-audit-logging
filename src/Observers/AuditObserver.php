@@ -4,9 +4,11 @@ namespace DeltaWhyDev\AuditLog\Observers;
 
 use DeltaWhyDev\AuditLog\Enums\AuditAction;
 use DeltaWhyDev\AuditLog\Services\Audit\AuditLogger;
+use DeltaWhyDev\AuditLog\Services\Audit\PendingAudit;
 use DeltaWhyDev\AuditLog\Traits\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class AuditObserver
@@ -171,11 +173,11 @@ class AuditObserver
         }
 
         // Register with PendingAudit
-        \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->registerChange(
+        PendingAudit::getInstance()->registerChange(
             $model,
             $action,
             $attributes,
-            $formattedRelations
+            $formattedRelations,
         );
     }
 
@@ -285,7 +287,7 @@ class AuditObserver
                 }
 
                 // Register with PendingAudit
-                \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->registerChange(
+                PendingAudit::getInstance()->registerChange(
                     $parent,
                     AuditAction::UPDATED,
                     [], // No attribute changes on parent
@@ -294,7 +296,7 @@ class AuditObserver
                             'added' => $addedData,
                             'removed' => $removedData,
                         ],
-                    ]
+                    ],
                 );
             }
         }
@@ -333,7 +335,7 @@ class AuditObserver
             }
 
             // Register with PendingAudit
-            \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->registerChange(
+            PendingAudit::getInstance()->registerChange(
                 $model,
                 AuditAction::RELATIONS_UPDATED,
                 [],
@@ -342,11 +344,11 @@ class AuditObserver
                         'added' => [],
                         'removed' => $removedData,
                     ],
-                ]
+                ],
             );
 
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('AuditObserver: pivotDetached failed', ['error' => $e->getMessage()]);
+            Log::error('AuditObserver: pivotDetached failed', ['error' => $e->getMessage()]);
         }
     }
 
@@ -409,7 +411,7 @@ class AuditObserver
                 // We can guess it from child class name pluralized?
                 $inverseRelation = Str::plural(Str::camel(class_basename($model)));
 
-                \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->registerChange(
+                PendingAudit::getInstance()->registerChange(
                     $parent,
                     AuditAction::RELATIONS_UPDATED,
                     [],
@@ -418,7 +420,7 @@ class AuditObserver
                             'added' => $added,
                             'removed' => $removed,
                         ],
-                    ]
+                    ],
                 );
 
             } catch (\Exception $e) {

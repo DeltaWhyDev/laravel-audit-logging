@@ -2,17 +2,19 @@
 
 namespace DeltaWhyDev\AuditLog\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 use DeltaWhyDev\AuditLog\Enums\AuditAction;
+use DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 
 class AuditLog extends Model
 {
     protected $table = 'audit_logs';
-    
+
     public $timestamps = false;
-    
+
     /**
      * Get the database connection for the model.
      *
@@ -22,9 +24,9 @@ class AuditLog extends Model
     {
         return config('audit-log.connection') ?: parent::getConnectionName();
     }
-    
-    use \Illuminate\Database\Eloquent\Prunable;
-    
+
+    use Prunable;
+
     /**
      * Get the prunable model query.
      */
@@ -32,7 +34,7 @@ class AuditLog extends Model
     {
         // Get retention days from config, default to 365
         $days = config('audit-log.pruning.retention_days', 365);
-        
+
         return static::where('created_at', '<=', now()->subDays($days));
     }
 
@@ -46,7 +48,7 @@ class AuditLog extends Model
         'metadata',
         'created_at',
     ];
-    
+
     protected $casts = [
         'entity_id' => 'integer',
         'actor_id' => 'integer',
@@ -56,7 +58,7 @@ class AuditLog extends Model
         'metadata' => 'array',
         'created_at' => 'datetime',
     ];
-    
+
     /**
      * Scope: Filter by entity
      */
@@ -65,7 +67,7 @@ class AuditLog extends Model
         return $query->where('entity_type', $entityType)
             ->where('entity_id', $entityId);
     }
-    
+
     /**
      * Scope: Filter by actor
      */
@@ -74,10 +76,10 @@ class AuditLog extends Model
         if ($actorId !== null) {
             $query->where('actor_id', $actorId);
         }
-        
+
         return $query;
     }
-    
+
     /**
      * Scope: Filter by action
      */
@@ -89,10 +91,10 @@ class AuditLog extends Model
         } elseif (is_string($action)) {
             $action = AuditAction::fromString($action)->value;
         }
-        
+
         return $query->where('action', $action);
     }
-    
+
     /**
      * Scope: Filter by date range
      */
@@ -100,7 +102,7 @@ class AuditLog extends Model
     {
         return $query->whereBetween('created_at', [$from, $to]);
     }
-    
+
     /**
      * Get human-readable summary
      */
@@ -108,32 +110,33 @@ class AuditLog extends Model
     {
         $actorName = $this->getActorName();
         $entityName = $this->getEntityName();
-        $entityDisplayName = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getEntityDisplayName($this->entity_type, $this->entity_id);
+        $entityDisplayName = ResourceResolver::getEntityDisplayName($this->entity_type, $this->entity_id);
 
         return sprintf(
             '%s %s %s: %s',
             $actorName,
             $this->action->label(),
             $entityName,
-            $entityDisplayName
+            $entityDisplayName,
         );
     }
-    
+
     /**
      * Get actor name
      */
     protected function getActorName(): string
     {
-        return \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::getActorDisplayName($this->actor_id);
+        return ResourceResolver::getActorDisplayName($this->actor_id);
     }
-    
+
     /**
      * Get entity name (short class name)
      */
     protected function getEntityName(): string
     {
-        $entityClass = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::resolveEntityClass($this->entity_type);
+        $entityClass = ResourceResolver::resolveEntityClass($this->entity_type);
         $parts = explode('\\', $entityClass);
+
         return end($parts);
     }
 }

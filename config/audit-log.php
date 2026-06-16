@@ -1,5 +1,7 @@
 <?php
 
+use Laravel\Nova\Nova;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -157,7 +159,7 @@ return [
     */
     'date_format' => 'Y-m-d H:i:s',
     'date_timezone' => null, // null = use user timezone or app timezone
-    
+
     'date_field_formats' => [
         'created_at' => 'Y-m-d',
         'updated_at' => 'Y-m-d H:i',
@@ -301,7 +303,7 @@ return [
     'model_namespace' => 'App\\Models', // Default namespace for models
 
     'nova' => [
-        'enabled' => class_exists(\Laravel\Nova\Nova::class),
+        'enabled' => class_exists(Nova::class),
         'resource_enabled' => true,
         'changelog_field_enabled' => true,
         'namespace' => 'App\\Nova', // Default namespace for Nova resources
