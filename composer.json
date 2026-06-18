@@ -20,15 +20,14 @@
         "php": "^8.2",
         "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
         "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
-        "illuminate/console": "^10.0|^11.0|^12.0|^13.0"
-    },
-    "require-dev": {
-        "laravel/nova": "^4.0|^5.0",
+        "illuminate/console": "^10.0|^11.0|^12.0|^13.0",
         "marshmallow/nova-date-range-filter": "^2.0"
     },
+    "require-dev": {
+        "laravel/nova": "^4.0|^5.0"
+    },
     "suggest": {
-        "laravel/nova": "Required to use the Nova Audit Log resource and visualizer.",
-        "marshmallow/nova-date-range-filter": "Required for the built-in created-date range filter on the Audit Log resource."
+        "laravel/nova": "Required to use the Nova Audit Log resource and visualizer."
     },
     "autoload": {
         "psr-4": {

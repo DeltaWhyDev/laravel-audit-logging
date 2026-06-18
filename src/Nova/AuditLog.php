@@ -373,11 +373,8 @@ class AuditLog extends Resource
             new \DeltaWhyDev\AuditLog\Nova\Filters\AuditLogEntityFilter,
         ];
 
-        // Created-date range filter, shipped by default when the suggested
-        // marshmallow/nova-date-range-filter package is installed.
-        if (class_exists(\Marshmallow\Filters\DateRangeFilter::class)) {
-            $filters[] = new \DeltaWhyDev\AuditLog\Nova\Filters\CreatedAtRangeFilter;
-        }
+        // Created-date range filter (marshmallow/nova-date-range-filter, a hard dependency).
+        $filters[] = new \DeltaWhyDev\AuditLog\Nova\Filters\CreatedAtRangeFilter;
 
         return $filters;
     }
