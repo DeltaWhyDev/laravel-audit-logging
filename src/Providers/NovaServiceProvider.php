@@ -22,6 +22,11 @@ class NovaServiceProvider extends ServiceProvider
             Nova::resources([
                 \DeltaWhyDev\AuditLog\Nova\AuditLog::class,
             ]);
+
+            // Theme the created-date range filter (flatpickr) to Nova's configured colors.
+            Nova::serving(function (ServingNova $event) {
+                Nova::style('deltawhy-audit-log', __DIR__ . '/../../resources/css/audit-log.css');
+            });
         }
 
         // Register Nova components

@@ -1,0 +1,36 @@
+/* Recolor the marshmallow/flatpickr date-range picker to Nova's configured
+   theme (config/nova.php brand colors, exposed as --colors-primary-* vars),
+   overriding the package's hardcoded #0ca5e9. */
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange,
+.flatpickr-day.selected.inRange,
+.flatpickr-day.startRange.inRange,
+.flatpickr-day.endRange.inRange,
+.flatpickr-day.selected:focus,
+.flatpickr-day.startRange:focus,
+.flatpickr-day.endRange:focus,
+.flatpickr-day.selected:hover,
+.flatpickr-day.startRange:hover,
+.flatpickr-day.endRange:hover,
+.flatpickr-day.selected.prevMonthDay,
+.flatpickr-day.startRange.prevMonthDay,
+.flatpickr-day.endRange.prevMonthDay,
+.flatpickr-day.selected.nextMonthDay,
+.flatpickr-day.startRange.nextMonthDay,
+.flatpickr-day.endRange.nextMonthDay {
+    background: rgb(var(--colors-primary-500)) !important;
+    border-color: rgb(var(--colors-primary-500)) !important;
+}
+
+.flatpickr-day.inRange {
+    background: rgb(var(--colors-primary-500) / 0.15) !important;
+    border-color: transparent !important;
+    box-shadow:
+        -5px 0 0 rgb(var(--colors-primary-500) / 0.15),
+        5px 0 0 rgb(var(--colors-primary-500) / 0.15) !important;
+}
+
+.flatpickr-day.today {
+    border-color: rgb(var(--colors-primary-400)) !important;
+}
