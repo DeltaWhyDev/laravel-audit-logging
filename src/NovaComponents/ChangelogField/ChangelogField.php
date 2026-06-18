@@ -281,14 +281,19 @@ class ChangelogField extends Field
             'attributes' => $attributes,
         ];
 
+        // Respect hidden_fields config for this model, keyed by either the morph alias
+        // or the FQCN (whichever form the record stored / the config uses).
+        $hiddenFields = [];
+        foreach (ResourceResolver::entityTypeCandidates((string) $this->entityType) as $candidate) {
+            $hiddenFields = array_merge($hiddenFields, config("audit-log.hidden_fields.{$candidate}", []));
+        }
+
         foreach ($attributes as $field => $change) {
             // Reset per-iteration variables to prevent carry-over from previous field
             $oldVal = null;
             $newVal = null;
             $diff = null;
 
-            // Respect hidden_fields configuration specifically for this model
-            $hiddenFields = config("audit-log.hidden_fields.{$this->entityType}", []);
             if (in_array($field, $hiddenFields)) {
                 continue;
             }
@@ -565,12 +570,14 @@ class ChangelogField extends Field
 
         $transformers = config('audit-log.transformers', []);
 
-        // Check for exact class match
-        $modelTransformers = $transformers[$entityType] ?? [];
-        $transformerClass = $modelTransformers[$field] ?? null;
+        // entity_type may be stored as a morph alias or a FQCN, and config keys may use
+        // either form — match against every equivalent candidate.
+        foreach (ResourceResolver::entityTypeCandidates($entityType) as $candidate) {
+            $transformerClass = $transformers[$candidate][$field] ?? null;
 
-        if ($transformerClass && class_exists($transformerClass)) {
-            return new $transformerClass;
+            if ($transformerClass && class_exists($transformerClass)) {
+                return new $transformerClass;
+            }
         }
 
         return null;

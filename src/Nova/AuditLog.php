@@ -405,12 +405,14 @@ class AuditLog extends Resource
     {
         $transformers = config('audit-log.transformers', []);
 
-        // Check for exact class match
-        $modelTransformers = $transformers[$entityType] ?? [];
-        $transformerClass = $modelTransformers[$field] ?? null;
+        // entity_type may be stored as a morph alias or a FQCN, and config keys may use
+        // either form — match against every equivalent candidate.
+        foreach (ResourceResolver::entityTypeCandidates($entityType) as $candidate) {
+            $transformerClass = $transformers[$candidate][$field] ?? null;
 
-        if ($transformerClass && class_exists($transformerClass)) {
-            return new $transformerClass;
+            if ($transformerClass && class_exists($transformerClass)) {
+                return new $transformerClass;
+            }
         }
 
         return null;

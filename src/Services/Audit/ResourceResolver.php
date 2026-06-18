@@ -64,6 +64,29 @@ class ResourceResolver
     }
 
     /**
+     * All config-lookup keys that may represent a stored entity_type, in priority order:
+     * the value exactly as stored, its resolved FQCN, and its registered morph alias.
+     *
+     * This lets per-entity config (transformers, hidden_fields, ...) be keyed by either
+     * the morph alias or the model FQCN, and still resolve regardless of which form a
+     * given record happened to store — records written before a model joined the
+     * entity_type_map keep the FQCN, later ones store the alias.
+     *
+     * @return array<int, string>
+     */
+    public static function entityTypeCandidates(string $entityType): array
+    {
+        $map = config('audit-log.entity_type_map', []);
+        $fqcn = self::resolveEntityClass($entityType);
+        $alias = array_search($fqcn, $map, true);
+
+        return array_values(array_unique(array_filter(
+            [$entityType, $fqcn, $alias !== false ? $alias : null],
+            static fn ($candidate) => is_string($candidate) && $candidate !== '',
+        )));
+    }
+
+    /**
      * Get the configured User model class name.
      */
     public static function getUserModel(): string
