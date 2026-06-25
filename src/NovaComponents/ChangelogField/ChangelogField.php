@@ -344,8 +344,8 @@ class ChangelogField extends Field
                 $linkConfig = config("audit-log.relational_links.{$field}");
 
                 if ($linkConfig && isset($linkConfig['model'])) {
-                    $oldVal = $this->formatRelationLink($old, $linkConfig);
-                    $newVal = $this->formatRelationLink($new, $linkConfig);
+                    $oldVal = $this->formatRelationLink($old, $linkConfig, 'old');
+                    $newVal = $this->formatRelationLink($new, $linkConfig, 'new');
                 } else {
                     // Try to use the underlying model's cast mechanism if class exists
                     $usedDummyModel = false;
@@ -513,7 +513,7 @@ class ChangelogField extends Field
     /**
      * Format relation as HTML link
      */
-    protected function formatRelationLink($id, array $config): string
+    protected function formatRelationLink($id, array $config, string $type = 'new'): string
     {
         if (! $id) {
             return '<span class="text-gray-500 italic">None</span>';
@@ -540,7 +540,11 @@ class ChangelogField extends Field
         if ($resource) {
             $url = '/nova/resources/'.$resource.'/'.$id;
 
-            return sprintf('<a href="%s" class="link-default font-semibold text-primary-500 hover:text-primary-600">%s</a>', e($url), e($name));
+            $colorClasses = $type === 'old'
+                ? 'text-red-800 dark:text-red-200 hover:text-red-900 dark:hover:text-red-100'
+                : 'link-default text-primary-500 hover:text-primary-600';
+
+            return sprintf('<a href="%s" class="font-semibold %s">%s</a>', e($url), $colorClasses, e($name));
         }
 
         return e($name);
