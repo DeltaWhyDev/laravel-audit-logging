@@ -8,6 +8,7 @@ use DeltaWhyDev\AuditLog\NovaComponents\ChangelogField\ChangelogField;
 use DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver;
 use Illuminate\Support\Str;
 use Laravel\Nova\Fields\DateTime;
+use Laravel\Nova\Fields\Heading;
 use Laravel\Nova\Fields\ID;
 use Laravel\Nova\Fields\KeyValue;
 use Laravel\Nova\Fields\Text;
@@ -78,6 +79,13 @@ class AuditLog extends Resource
             ID::make()
                 ->hideFromDetail()
                 ->sortable(),
+
+            Heading::make(sprintf(
+                '<span class="text-gray-500 dark:text-gray-400">Record ID:</span> <span class="font-bold">#%s</span>',
+                e((string) $this->id)
+            ))
+                ->asHtml()
+                ->onlyOnDetail(),
 
             Text::make('Summary', function () {
                 $actorName = ResourceResolver::getActorDisplayName($this->actor_id);
