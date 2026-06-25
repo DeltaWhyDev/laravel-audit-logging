@@ -51,8 +51,10 @@ class AuditObserver
             return;
         }
 
-        // Get original attributes before changes
-        $original = $model->getOriginal();
+        // Use RAW originals: getOriginal() returns cast values (enum objects, Carbon
+        // dates) which never compare equal to the raw scalars from getAttributes(),
+        // producing phantom diffs for unchanged enum/date fields.
+        $original = $model->getRawOriginal();
         $changes = $model->getChanges();
 
         // Filter out excluded attributes
