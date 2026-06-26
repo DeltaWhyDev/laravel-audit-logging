@@ -190,12 +190,14 @@ class ChangelogField extends Field
     {
         $parts = [];
 
-        // Check attributes
-        if (! empty($log->attributes)) {
-            $fields = array_keys($log->attributes);
-            $fieldLabels = array_map(function ($field) {
-                return $this->formatFieldName($field);
-            }, $fields);
+        // List only fields that actually render a change. formatAttributes()
+        // drops no-op diffs (e.g. cast-vs-raw phantom enum values stored as
+        // old==new), keeping the summary in sync with the detail rows.
+        $changedAttributes = $this->formatAttributes($log->attributes ?? []);
+        if (! empty($changedAttributes)) {
+            $fieldLabels = array_values(array_unique(array_map(function ($attribute) {
+                return $attribute['label'];
+            }, $changedAttributes)));
 
             // Limit to 3 fields then add "..."
             if (count($fieldLabels) > 3) {
