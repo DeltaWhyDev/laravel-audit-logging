@@ -411,14 +411,21 @@ class ChangelogField extends Field
                 $id = is_array($item) ? ($item['id'] ?? null) : $item;
                 $loggedName = is_array($item) ? ($item['name'] ?? $id) : $item;
 
+                // The logged 'type' is authoritative: for pivot-driven relation logs the
+                // relation name resolves to the pivot class (e.g. outerPackingMaterials ->
+                // OuterPackingMaterial), whose table the related id does not exist in, so
+                // every item would render as "(deleted)".
+                $loggedType = is_array($item) ? ($item['type'] ?? null) : null;
+                $itemClass = is_string($loggedType) && class_exists($loggedType) ? $loggedType : $modelClass;
+
                 $name = $loggedName;
                 $url = null;
 
-                if ($modelClass && $id) {
-                    $url = ResourceResolver::getNovaResourceUri($modelClass, $id);
+                if ($itemClass && $id) {
+                    $url = ResourceResolver::getNovaResourceUri($itemClass, $id);
 
                     // Prioritize actual live DB data over statically logged names if it exists
-                    $liveName = ResourceResolver::getEntityDisplayName($modelClass, $id);
+                    $liveName = ResourceResolver::getEntityDisplayName($itemClass, $id);
                     if ($liveName !== "#{$id}" && ! str_contains($liveName, '(deleted)')) {
                         $name = $liveName;
                     } elseif (str_contains($liveName, '(deleted)')) {
