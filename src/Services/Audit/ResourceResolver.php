@@ -169,7 +169,7 @@ class ResourceResolver
                     $value = $entity->{$field};
                     // Truncate long names
                     if (is_string($value) && strlen($value) > 50) {
-                        return self::$resolvedEntities[$cacheKey] = substr($value, 0, 47).'...';
+                        return self::$resolvedEntities[$cacheKey] = mb_strcut($value, 0, 47).'...';
                     }
 
                     return self::$resolvedEntities[$cacheKey] = (string) $value;

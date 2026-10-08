@@ -622,7 +622,7 @@ class ChangelogField extends Field
                     $value = $entity->{$field};
                     // Truncate long names
                     if (strlen($value) > 30) {
-                        $value = substr($value, 0, 27).'...';
+                        $value = mb_strcut($value, 0, 27).'...';
                     }
 
                     return "{$entityTypeName}: {$value}";
