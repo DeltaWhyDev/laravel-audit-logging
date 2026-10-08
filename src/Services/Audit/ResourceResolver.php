@@ -111,23 +111,20 @@ class ResourceResolver
         $userModel = self::getUserModel();
 
         if (class_exists($userModel)) {
-            $query = $userModel::query();
-            if (method_exists($userModel, 'withTrashed')) {
-                $query->withTrashed();
-            }
-
-            $user = $query->find($actorId);
+            $user = self::findEntity($userModel, $actorId);
 
             if ($user) {
+                $deletedMark = method_exists($user, 'trashed') && $user->trashed() ? ' (deleted)' : '';
+
                 // Try to find a display name from common fields
                 $nameFields = ['name', 'fullname', 'full_name', 'username', 'email'];
                 foreach ($nameFields as $field) {
                     if (! empty($user->$field)) {
-                        return self::$resolvedActors[$cacheKey] = $user->$field;
+                        return self::$resolvedActors[$cacheKey] = $user->$field.$deletedMark;
                     }
                 }
 
-                return self::$resolvedActors[$cacheKey] = "User #{$actorId}";
+                return self::$resolvedActors[$cacheKey] = "User #{$actorId}".$deletedMark;
             }
         }
 
@@ -142,11 +139,16 @@ class ResourceResolver
     {
         $query = $entityClass::query();
 
-        if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($entityClass), true)) {
+        if (self::usesSoftDeletes($entityClass)) {
             $query->withTrashed();
         }
 
         return $query->find($entityId);
+    }
+
+    public static function usesSoftDeletes(string $class): bool
+    {
+        return in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($class), true);
     }
 
     /**

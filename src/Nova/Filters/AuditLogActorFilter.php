@@ -34,7 +34,7 @@ class AuditLogActorFilter extends Filter
         // Use withTrashed() so soft-deleted users still appear in the filter
         $query = class_exists($userModel) ? $userModel::query() : null;
         if ($query) {
-            if (method_exists($userModel, 'withTrashed')) {
+            if (\DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::usesSoftDeletes($userModel)) {
                 $query->withTrashed();
             }
             
