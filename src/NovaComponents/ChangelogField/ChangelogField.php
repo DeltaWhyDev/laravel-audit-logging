@@ -609,7 +609,7 @@ class ChangelogField extends Field
             }
 
             $entityTypeName = Str::headline(class_basename($entityClass));
-            $entity = $entityClass::find($entityId);
+            $entity = \DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver::findEntity($entityClass, $entityId);
 
             if (! $entity) {
                 return "{$entityTypeName}: #{$entityId} (deleted)";

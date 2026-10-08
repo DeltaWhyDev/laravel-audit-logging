@@ -135,6 +135,21 @@ class ResourceResolver
     }
 
     /**
+     * Find an entity, a soft-deleted one included: its name stays readable in its own logs.
+     * withTrashed() is a scope of the query, not a method of the model.
+     */
+    public static function findEntity(string $entityClass, string|int $entityId): ?\Illuminate\Database\Eloquent\Model
+    {
+        $query = $entityClass::query();
+
+        if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($entityClass), true)) {
+            $query->withTrashed();
+        }
+
+        return $query->find($entityId);
+    }
+
+    /**
      * Get human-readable display name for an entity.
      */
     public static function getEntityDisplayName(string $entityType, string|int $entityId): string
@@ -150,12 +165,7 @@ class ResourceResolver
                 return self::$resolvedEntities[$cacheKey] = "#{$entityId}";
             }
 
-            $query = $entityClass::query();
-            if (method_exists($entityClass, 'withTrashed')) {
-                $query->withTrashed();
-            }
-
-            $entity = $query->find($entityId);
+            $entity = self::findEntity($entityClass, $entityId);
 
             if (! $entity) {
                 return self::$resolvedEntities[$cacheKey] = "#{$entityId} (deleted)";
