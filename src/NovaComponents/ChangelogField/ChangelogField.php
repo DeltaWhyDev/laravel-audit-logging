@@ -424,12 +424,13 @@ class ChangelogField extends Field
                 if ($itemClass && $id) {
                     $url = ResourceResolver::getNovaResourceUri($itemClass, $id);
 
-                    // Prioritize actual live DB data over statically logged names if it exists
+                    // Prioritize actual live DB data over statically logged names if it exists;
+                    // a record that is gone keeps its logged name, a soft-deleted one its marked live name
                     $liveName = ResourceResolver::getEntityDisplayName($itemClass, $id);
-                    if ($liveName !== "#{$id}" && ! str_contains($liveName, '(deleted)')) {
-                        $name = $liveName;
-                    } elseif (str_contains($liveName, '(deleted)')) {
+                    if ($liveName === "#{$id} (deleted)") {
                         $name = $loggedName.' (deleted)';
+                    } elseif ($liveName !== "#{$id}") {
+                        $name = $liveName;
                     }
                 }
 
@@ -615,6 +616,8 @@ class ChangelogField extends Field
                 return "{$entityTypeName}: #{$entityId} (deleted)";
             }
 
+            $deletedMark = method_exists($entity, 'trashed') && $entity->trashed() ? ' (deleted)' : '';
+
             // Try common name fields in order of preference
             $nameFields = ['name', 'title', 'label', 'code', 'reference', 'ref', 'email', 'identifier'];
 
@@ -626,12 +629,12 @@ class ChangelogField extends Field
                         $value = mb_strcut($value, 0, 27).'...';
                     }
 
-                    return "{$entityTypeName}: {$value}";
+                    return "{$entityTypeName}: {$value}{$deletedMark}";
                 }
             }
 
             // Fall back to entity type with ID
-            return "{$entityTypeName}: #{$entityId}";
+            return "{$entityTypeName}: #{$entityId}{$deletedMark}";
         } catch (\Throwable $e) {
             return ''; // Return empty string instead of ID to avoid "#123" if lookup fails
         }

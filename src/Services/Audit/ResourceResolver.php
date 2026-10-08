@@ -171,6 +171,8 @@ class ResourceResolver
                 return self::$resolvedEntities[$cacheKey] = "#{$entityId} (deleted)";
             }
 
+            $deletedMark = method_exists($entity, 'trashed') && $entity->trashed() ? ' (deleted)' : '';
+
             // Try common name fields in order of preference
             $nameFields = ['name', 'title', 'label', 'code', 'reference', 'ref', 'email', 'identifier', 'fullname', 'full_name', 'username'];
 
@@ -179,15 +181,15 @@ class ResourceResolver
                     $value = $entity->{$field};
                     // Truncate long names
                     if (is_string($value) && strlen($value) > 50) {
-                        return self::$resolvedEntities[$cacheKey] = mb_strcut($value, 0, 47).'...';
+                        return self::$resolvedEntities[$cacheKey] = mb_strcut($value, 0, 47).'...'.$deletedMark;
                     }
 
-                    return self::$resolvedEntities[$cacheKey] = (string) $value;
+                    return self::$resolvedEntities[$cacheKey] = (string) $value.$deletedMark;
                 }
             }
 
             // Fall back to ID
-            return self::$resolvedEntities[$cacheKey] = "#{$entityId}";
+            return self::$resolvedEntities[$cacheKey] = "#{$entityId}".$deletedMark;
         } catch (\Throwable $e) {
             return self::$resolvedEntities[$cacheKey] = "#{$entityId}";
         }
