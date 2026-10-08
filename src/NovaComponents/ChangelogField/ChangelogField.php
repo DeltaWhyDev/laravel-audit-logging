@@ -485,7 +485,7 @@ class ChangelogField extends Field
                 return '<span class="font-semibold ' . $colorClass . '">' . e($formatted['display']) . '</span>';
             }
             // Text style — plain label
-            return (string) $formatted['display'];
+            return e((string) $formatted['display']);
         }
 
         // Handle Date Formats
@@ -497,7 +497,7 @@ class ChangelogField extends Field
                         ? $value
                         : \Carbon\Carbon::parse($value);
 
-                    return $date->format($dateFormats[$fieldName]);
+                    return e($date->format($dateFormats[$fieldName]));
                 } catch (\Throwable $e) {
                     // Fallback to standard rendering if parsing fails
                 }
@@ -508,15 +508,16 @@ class ChangelogField extends Field
         if ($model && $fieldName && AuditLogger::isEnumField($fieldName, $model)) {
             $formatted = AuditLogger::formatEnum($value, $fieldName, $model);
             if (is_array($formatted) && isset($formatted['display'])) {
-                return (string) $formatted['display'];
+                return e((string) $formatted['display']);
             }
         }
 
+        // The Vue field prints old and new values as HTML: a value a user typed must arrive as text.
         if (is_array($value)) {
-            return json_encode($value, JSON_UNESCAPED_UNICODE);
+            return e(json_encode($value, JSON_UNESCAPED_UNICODE));
         }
 
-        return (string) $value;
+        return e((string) $value);
     }
 
     /**

@@ -22,7 +22,7 @@ class JsonDiffTransformer implements BaseTransformer
         }
 
         return '<pre class="text-xs bg-gray-50 dark:bg-gray-800 p-2 rounded overflow-x-auto">' . 
-               json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . 
+               e(json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . 
                '</pre>';
     }
 

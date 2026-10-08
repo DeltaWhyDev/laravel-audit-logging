@@ -89,7 +89,7 @@ class AuditLog extends Resource
 
             Text::make('Summary', function () {
                 $actorName = ResourceResolver::getActorDisplayName($this->actor_id);
-                $actorHtml = $actorName;
+                $actorHtml = e($actorName);
                 if ($this->actor_id) {
                     $userModel = ResourceResolver::getUserModel();
                     $actorUri = $this->getNovaResourceUri($userModel, $this->actor_id);
