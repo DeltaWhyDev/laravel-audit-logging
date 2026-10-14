@@ -535,7 +535,7 @@ class ChangelogField extends Field
             return e('#'.$id);
         }
 
-        $model = call_user_func([$modelClass, 'find'], $id);
+        $model = ResourceResolver::findEntity($modelClass, $id);
 
         $name = null;
         if ($model) {
@@ -544,7 +544,11 @@ class ChangelogField extends Field
         }
 
         if (! $name) {
-            $name = class_basename($modelClass).' #'.$id.($model ? '' : ' (deleted)');
+            $name = class_basename($modelClass).' #'.$id;
+        }
+
+        if (! $model || (method_exists($model, 'trashed') && $model->trashed())) {
+            $name .= ' (deleted)';
         }
 
         $resource = $config['resource'] ?? null;
