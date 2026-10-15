@@ -8,6 +8,7 @@ use DeltaWhyDev\AuditLog\Services\Audit\AuditLogger;
 use DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver;
 use Illuminate\Support\Str;
 use Laravel\Nova\Fields\Field;
+use Laravel\Nova\Nova;
 
 class ChangelogField extends Field
 {
@@ -176,7 +177,7 @@ class ChangelogField extends Field
             'entity_id' => $this->entityId,
             'entity_url' => $this->getNovaResourceUri($this->entityType, $this->entityId),
             'audit_log_resource_uri' => 'audit-logs', // Standard URI key for audit logs
-            'timestamp' => $log->created_at->format('Y-m-d H:i:s'),
+            'timestamp' => $log->created_at->copy()->setTimezone(Nova::resolveUserTimezone(request()) ?? config('app.timezone'))->format('Y-m-d H:i:s'),
             'attributes' => $this->formatAttributes($log->attributes ?? []),
             'relations' => $this->formatRelations($log->relations ?? []),
             'metadata' => $log->metadata ?? [],

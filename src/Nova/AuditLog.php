@@ -14,6 +14,7 @@ use Laravel\Nova\Fields\KeyValue;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Fields\Textarea;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Nova;
 use Laravel\Nova\Resource;
 
 class AuditLog extends Resource
@@ -159,8 +160,8 @@ class AuditLog extends Resource
             DateTime::make('Created At')
                 ->sortable()
                 ->hideFromDetail()
-                ->displayUsing(function ($value) {
-                    return $value?->format('Y-m-d H:i:s');
+                ->displayUsing(function ($value) use ($request) {
+                    return $value?->copy()->setTimezone(Nova::resolveUserTimezone($request) ?? config('app.timezone'))->format('Y-m-d H:i:s');
                 }),
 
             // Changes Table - Replaced with ChangelogField
