@@ -8,6 +8,7 @@ use DeltaWhyDev\AuditLog\Services\Audit\ResourceResolver;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Prunable;
+use Illuminate\Support\Str;
 
 class AuditLog extends Model
 {
@@ -115,8 +116,8 @@ class AuditLog extends Model
         return sprintf(
             '%s %s %s: %s',
             $actorName,
-            $this->action->label(),
-            $entityName,
+            strtolower($this->action->label()),
+            Str::headline($entityName),
             $entityDisplayName,
         );
     }

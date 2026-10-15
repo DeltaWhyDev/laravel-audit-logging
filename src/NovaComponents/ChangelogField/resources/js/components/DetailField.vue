@@ -23,9 +23,9 @@
                                 {{ log.actor || __('System') }}
                             </span>
 
-                            <!-- Action -->
+                            <!-- Action; its spaces sit inside the text because the compiler drops the whitespace between tags -->
                             <span class="text-gray-500 dark:text-gray-400 mx-1">
-                                {{ log.action_label.toLowerCase() }}
+                                {{ ' ' + log.action_label.toLowerCase() + ' ' }}
                             </span>
 
                             <!-- Entity (Target) -->
