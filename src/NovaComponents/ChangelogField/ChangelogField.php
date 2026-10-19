@@ -229,8 +229,10 @@ class ChangelogField extends Field
             }
         }
 
+        // The model's summary is the entry's own title line: repeating it in brackets reads as
+        // a change. The view hides this text.
         if (empty($parts)) {
-            return $log->summary ?? 'No changes detailed';
+            return 'No changes detailed';
         }
 
         $summaryText = implode(' | ', $parts);
