@@ -130,7 +130,7 @@ class AuditLogger
         // Check pattern match (e.g., *password*, *secret*)
         foreach ($sensitiveFields as $pattern) {
             if (str_contains($pattern, '*')) {
-                $regex = '/^' . str_replace(['*', '.'], ['.*', '\.'], $pattern) . '$/i';
+                $regex = '/^' . str_replace('\*', '.*', preg_quote($pattern, '/')) . '$/i';
                 if (preg_match($regex, $field)) {
                     return true;
                 }
