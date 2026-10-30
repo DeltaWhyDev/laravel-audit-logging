@@ -68,7 +68,8 @@ class AuditLog extends Resource
      */
     public static function indexQuery(NovaRequest $request, $query)
     {
-        return $query->orderBy('created_at', 'desc');
+        // Rows with one timestamp have no order of their own: without the key MySQL deals some to two pages, others to none.
+        return $query->orderBy('created_at', 'desc')->orderBy('id', $request->get('orderByDirection') === 'asc' ? 'asc' : 'desc');
     }
 
     /**
