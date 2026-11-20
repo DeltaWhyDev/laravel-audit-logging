@@ -65,6 +65,44 @@ class AuditLogger
     }
     
     /**
+     * The array a JSON object or list decodes to, or null for any other value
+     */
+    protected static function decodeJsonContainer($value): ?array
+    {
+        if (is_array($value)) {
+            return $value;
+        }
+        
+        if (!is_string($value)) {
+            return null;
+        }
+        
+        $decoded = json_decode($value, true);
+        
+        return is_array($decoded) ? $decoded : null;
+    }
+    
+    /**
+     * Map keys in one order and numbers as strings, so 30 and "30" match while null, booleans and list order still count
+     */
+    protected static function normalizeJsonContainer(array $value): array
+    {
+        if (!array_is_list($value)) {
+            ksort($value);
+        }
+        
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $value[$key] = self::normalizeJsonContainer($item);
+            } elseif (is_int($item) || is_float($item)) {
+                $value[$key] = (string) $item;
+            }
+        }
+        
+        return $value;
+    }
+    
+    /**
      * Compare two values smartly, handling type differences
      */
     public static function valuesAreEqual($oldValue, $newValue): bool
@@ -77,6 +115,13 @@ class AuditLogger
         // Both empty (including empty array, empty string, null)
         if (empty($oldValue) && empty($newValue)) {
             return true;
+        }
+        
+        // JSON columns: the same content in another spacing, key order or id type is no change
+        $oldDecoded = self::decodeJsonContainer($oldValue);
+        $newDecoded = self::decodeJsonContainer($newValue);
+        if ($oldDecoded !== null && $newDecoded !== null) {
+            return self::normalizeJsonContainer($oldDecoded) === self::normalizeJsonContainer($newDecoded);
         }
         
         // Normalize arrays to JSON for comparison
