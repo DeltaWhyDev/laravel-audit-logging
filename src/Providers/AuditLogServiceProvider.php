@@ -2,6 +2,8 @@
 
 namespace DeltaWhyDev\AuditLog\Providers;
 
+use Illuminate\Database\Events\TransactionRolledBack;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class AuditLogServiceProvider extends ServiceProvider
@@ -40,6 +42,10 @@ class AuditLogServiceProvider extends ServiceProvider
         // during the request (e.g. sync() which fires multiple pivot events).
         $this->app->terminating(function () {
             \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->flushAll();
+        });
+
+        Event::listen(TransactionRolledBack::class, function (TransactionRolledBack $event) {
+            \DeltaWhyDev\AuditLog\Services\Audit\PendingAudit::getInstance()->discardRolledBack($event->connection->transactionLevel());
         });
 
         // Register Nova service provider if Nova is available

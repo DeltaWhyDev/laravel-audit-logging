@@ -44,6 +44,7 @@ class PendingAudit
                 'action' => $action,
                 'attributes' => [],
                 'relations' => [],
+                'transactionLevel' => DB::transactionLevel(),
             ];
         }
 
@@ -99,6 +100,19 @@ class PendingAudit
             // registered in AuditLogServiceProvider::boot(). This allows sync()
             // operations (which fire separate detach/attach events) to merge
             // into a single audit log entry.
+        }
+    }
+
+    /**
+     * Forget the changes registered inside a transaction that was rolled back: their rows are gone,
+     * so the terminating flush must not log them.
+     */
+    public function discardRolledBack(int $transactionLevel): void
+    {
+        foreach ($this->pending as $key => $data) {
+            if ($data['transactionLevel'] > $transactionLevel) {
+                unset($this->pending[$key]);
+            }
         }
     }
 
