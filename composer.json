@@ -21,7 +21,8 @@
         "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
         "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
         "illuminate/console": "^10.0|^11.0|^12.0|^13.0",
-        "marshmallow/nova-date-range-filter": "^2.0"
+        "marshmallow/nova-date-range-filter": "^2.0",
+        "outl1ne/nova-input-filter": "^3.0"
     },
     "require-dev": {
         "laravel/nova": "^4.0|^5.0"

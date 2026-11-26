@@ -158,7 +158,7 @@ class AuditLog extends Resource
                 ->onlyOnIndex()
                 ->sortable(false),
 
-            DateTime::make('Created At')
+            DateTime::make(__('Timestamp'), 'created_at')
                 ->sortable()
                 ->hideFromDetail()
                 ->displayUsing(function ($value) use ($request) {
@@ -381,10 +381,9 @@ class AuditLog extends Resource
         $filters = [
             new \DeltaWhyDev\AuditLog\Nova\Filters\AuditLogActorFilter,
             new \DeltaWhyDev\AuditLog\Nova\Filters\AuditLogEntityFilter,
+            \Outl1ne\NovaInputFilter\InputFilter::make(['id'], __('ID')),
+            new \DeltaWhyDev\AuditLog\Nova\Filters\CreatedAtRangeFilter,
         ];
-
-        // Created-date range filter (marshmallow/nova-date-range-filter, a hard dependency).
-        $filters[] = new \DeltaWhyDev\AuditLog\Nova\Filters\CreatedAtRangeFilter;
 
         return $filters;
     }
